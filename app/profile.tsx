@@ -1,19 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Image,
-    ImageBackground,
     ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -98,77 +96,66 @@ export default function ProfileScreen() {
     return (
         <SafeAreaProvider>
             <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
 
-                {/* Header with Background */}
-                <ImageBackground
-                    source={require('../assets/images/fitness-bg.png')}
-                    className="pb-8 pt-2"
-                    resizeMode="cover"
-                >
-                    <LinearGradient
-                        colors={['rgba(255, 140, 0, 0.7)', 'rgba(139, 69, 19, 0.8)']}
-                        className="absolute inset-0"
-                    />
+                {/* Header */}
+                <View className="bg-white px-5 pt-2 pb-8 border-b border-gray-200">
+                    {/* Top Bar */}
+                    <View className="flex-row justify-between items-center mb-8">
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
+                        >
+                            <Ionicons name="arrow-back" size={22} color="#000" />
+                        </TouchableOpacity>
 
-                    <View className="px-5">
-                        {/* Top Bar */}
-                        <View className="flex-row justify-between items-center mb-8">
-                            <TouchableOpacity
-                                onPress={() => router.back()}
-                                className="w-11 h-11 rounded-full bg-black/20 items-center justify-center"
-                            >
-                                <Ionicons name="arrow-back" size={22} color="#000" />
-                            </TouchableOpacity>
+                        <Text className="text-black text-xl font-bold">Edit Profile</Text>
 
-                            <Text className="text-black text-xl font-bold">Edit Profile</Text>
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (isEditing) {
+                                    handleSave();
+                                } else {
+                                    setIsEditing(true);
+                                }
+                            }}
+                            className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
+                        >
+                            <Ionicons name={isEditing ? 'checkmark' : 'create-outline'} size={22} color="#000" />
+                        </TouchableOpacity>
+                    </View>
 
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (isEditing) {
-                                        handleSave();
-                                    } else {
-                                        setIsEditing(true);
-                                    }
-                                }}
-                                className="w-11 h-11 rounded-full bg-black/20 items-center justify-center"
-                            >
-                                <Ionicons name={isEditing ? 'checkmark' : 'create-outline'} size={22} color="#000" />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Profile Picture */}
-                        <View className="items-center mb-6">
-                            <View className="relative">
-                                <View className="w-32 h-32 rounded-full bg-black/20 items-center justify-center overflow-hidden border-4 border-black/10">
-                                    {profile.profilePic ? (
-                                        <Image source={{ uri: profile.profilePic }} className="w-full h-full" />
-                                    ) : (
-                                        <Ionicons name="person" size={64} color="#000" />
-                                    )}
-                                </View>
-
-                                {/* Camera Button */}
-                                <TouchableOpacity
-                                    onPress={pickImage}
-                                    className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black items-center justify-center border-2 border-white"
-                                >
-                                    <Ionicons name="camera" size={20} color="#fff" />
-                                </TouchableOpacity>
+                    {/* Profile Picture */}
+                    <View className="items-center mb-6">
+                        <View className="relative">
+                            <View className="w-32 h-32 rounded-full bg-gray-100 items-center justify-center overflow-hidden border-4 border-gray-200">
+                                {profile.profilePic ? (
+                                    <Image source={{ uri: profile.profilePic }} className="w-full h-full" />
+                                ) : (
+                                    <Ionicons name="person" size={64} color="#666" />
+                                )}
                             </View>
 
-                            <Text className="text-black/60 text-sm mt-3">Tap camera to change photo</Text>
+                            {/* Camera Button */}
+                            <TouchableOpacity
+                                onPress={pickImage}
+                                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-black items-center justify-center border-2 border-white"
+                            >
+                                <Ionicons name="camera" size={20} color="#fff" />
+                            </TouchableOpacity>
                         </View>
+
+                        <Text className="text-gray-500 text-sm mt-3">Tap camera to change photo</Text>
                     </View>
-                </ImageBackground>
+                </View>
 
                 {/* Profile Form */}
                 <ScrollView className="flex-1 px-5 pt-8" showsVerticalScrollIndicator={false}>
                     {/* Full Name */}
                     <View className="mb-6">
-                        <Text className="text-black/70 text-sm font-semibold mb-2 ml-1">Full Name</Text>
-                        <View className="flex-row items-center bg-orange-50 rounded-2xl px-5 py-4 border-2 border-orange-200">
-                            <Ionicons name="person-outline" size={22} color="#FF8C00" />
+                        <Text className="text-gray-700 text-sm font-semibold mb-2 ml-1">Full Name</Text>
+                        <View className="flex-row items-center bg-gray-50 rounded-2xl px-5 py-4 border-2 border-gray-200">
+                            <Ionicons name="person-outline" size={22} color="#000" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-black font-medium"
                                 value={profile.fullName}
@@ -178,14 +165,14 @@ export default function ProfileScreen() {
                                 editable={isEditing}
                             />
                             {isEditing && (
-                                <Ionicons name="create-outline" size={20} color="#FF8C00" />
+                                <Ionicons name="create-outline" size={20} color="#000" />
                             )}
                         </View>
                     </View>
 
                     {/* Email (Read Only) */}
                     <View className="mb-6">
-                        <Text className="text-black/70 text-sm font-semibold mb-2 ml-1">Email Address</Text>
+                        <Text className="text-gray-700 text-sm font-semibold mb-2 ml-1">Email Address</Text>
                         <View className="flex-row items-center bg-gray-100 rounded-2xl px-5 py-4 border-2 border-gray-300">
                             <Ionicons name="mail-outline" size={22} color="#666" />
                             <TextInput
@@ -197,7 +184,7 @@ export default function ProfileScreen() {
                             />
                             <Ionicons name="lock-closed-outline" size={18} color="#999" />
                         </View>
-                        <Text className="text-black/40 text-xs mt-2 ml-1">Email cannot be changed</Text>
+                        <Text className="text-gray-400 text-xs mt-2 ml-1">Email cannot be changed</Text>
                     </View>
 
                     {/* Action Buttons */}
@@ -226,12 +213,12 @@ export default function ProfileScreen() {
 
                     {/* Info Card */}
                     {!isEditing && (
-                        <View className="bg-orange-50 rounded-2xl p-5 mb-8 mt-4">
+                        <View className="bg-gray-50 rounded-2xl p-5 mb-8 mt-4 border border-gray-200">
                             <View className="flex-row items-start">
-                                <Ionicons name="information-circle-outline" size={24} color="#FF8C00" style={{ marginTop: 2 }} />
+                                <Ionicons name="information-circle-outline" size={24} color="#000" style={{ marginTop: 2 }} />
                                 <View className="flex-1 ml-3">
                                     <Text className="text-black font-semibold text-base mb-1">Profile Information</Text>
-                                    <Text className="text-black/60 text-sm leading-5">
+                                    <Text className="text-gray-600 text-sm leading-5">
                                         Keep your profile up to date. Tap the edit icon above to make changes.
                                     </Text>
                                 </View>

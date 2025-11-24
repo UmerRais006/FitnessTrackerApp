@@ -6,13 +6,17 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
+    Image,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 interface Workout {
     time: Date;
@@ -23,13 +27,19 @@ interface Workout {
 export default function HomeScreen() {
     const router = useRouter();
     const [userName, setUserName] = useState('User');
+    const [profilePic, setProfilePic] = useState<string | null>(null);
     const [todayWorkouts, setTodayWorkouts] = useState<Workout[]>([]);
     const [steps, setSteps] = useState(0);
     const [calories, setCalories] = useState(0);
+    const [distance, setDistance] = useState(0);
+    const [dailyGoal, setDailyGoal] = useState(5); // Default 5 km
+    const [showGoalModal, setShowGoalModal] = useState(false);
+    const [goalInput, setGoalInput] = useState('5');
 
     useEffect(() => {
         loadUserData();
         loadTodayWorkouts();
+        loadGoal();
 
         // Setup pedometer
         const setupStepCounter = async () => {
@@ -48,11 +58,13 @@ export default function HomeScreen() {
 
         const stepIntervalPromise = setupStepCounter();
 
-        // Refresh workouts when screen comes into focus
+        // Refresh workouts and user data periodically
         const workoutInterval = setInterval(loadTodayWorkouts, 2000);
+        const userDataInterval = setInterval(loadUserData, 2000); // Refresh profile pic every 2 seconds
 
         return () => {
             clearInterval(workoutInterval);
+            clearInterval(userDataInterval);
             stepIntervalPromise.then(interval => interval && clearInterval(interval));
         };
     }, []);
@@ -67,6 +79,7 @@ export default function HomeScreen() {
             if (result) {
                 setSteps(result.steps);
                 setCalories(Math.round(result.steps * 0.04));
+                setDistance(parseFloat((result.steps * 0.0008).toFixed(2))); // Convert steps to km
             }
         } catch (error) {
             console.log('Error fetching steps:', error);
@@ -79,6 +92,7 @@ export default function HomeScreen() {
             if (userJson) {
                 const user = JSON.parse(userJson);
                 setUserName(user.fullName || 'User');
+                setProfilePic(user.profilePic || null);
             }
         } catch (error) {
             console.error('Error loading user data:', error);
@@ -102,6 +116,43 @@ export default function HomeScreen() {
         } catch (error) {
             console.error('Error loading workouts:', error);
         }
+    };
+
+    const loadGoal = async () => {
+        try {
+            const savedGoal = await AsyncStorage.getItem('dailyGoal');
+            if (savedGoal) {
+                const goal = parseFloat(savedGoal);
+                setDailyGoal(goal);
+                setGoalInput(goal.toString());
+            }
+        } catch (error) {
+            console.error('Error loading goal:', error);
+        }
+    };
+
+    const saveGoal = async (goal: number) => {
+        try {
+            await AsyncStorage.setItem('dailyGoal', goal.toString());
+        } catch (error) {
+            console.error('Error saving goal:', error);
+        }
+    };
+
+    const handleGoalPress = () => {
+        setGoalInput(dailyGoal.toString());
+        setShowGoalModal(true);
+    };
+
+    const handleGoalSubmit = () => {
+        const newGoal = parseFloat(goalInput);
+        if (isNaN(newGoal) || newGoal <= 0) {
+            Alert.alert('Invalid Goal', 'Please enter a valid positive number for your goal.');
+            return;
+        }
+        setDailyGoal(newGoal);
+        saveGoal(newGoal);
+        setShowGoalModal(false);
     };
 
     const handleLogout = async () => {
@@ -137,6 +188,54 @@ export default function HomeScreen() {
         });
     };
 
+    // Circular Progress Component
+    const CircularProgress = ({ progress, size = 70 }: { progress: number; size?: number }) => {
+        const strokeWidth = 8;
+        const radius = (size - strokeWidth) / 2;
+        const circumference = radius * 2 * Math.PI;
+        const progressOffset = circumference - (Math.min(progress, 100) / 100) * circumference;
+
+        // Color based on progress
+        const getColor = () => {
+            if (progress >= 100) return '#10b981'; // green
+            if (progress >= 50) return '#f97316'; // orange
+            return '#d1d5db'; // gray
+        };
+
+        return (
+            <View style={{ width: size, height: size, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+                    {/* Background circle */}
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="#f3f4f6"
+                        strokeWidth={strokeWidth}
+                        fill="none"
+                    />
+                    {/* Progress circle */}
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke={getColor()}
+                        strokeWidth={strokeWidth}
+                        fill="none"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={progressOffset}
+                        strokeLinecap="round"
+                    />
+                </Svg>
+                <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#000' }}>
+                        {Math.min(Math.round(progress), 100)}%
+                    </Text>
+                </View>
+            </View>
+        );
+    };
+
 
     return (
         <SafeAreaProvider>
@@ -144,9 +243,9 @@ export default function HomeScreen() {
                 <StatusBar style="dark" />
                 <View className="flex-1 bg-white">
                     {/* Header */}
-                    <View className="px-6 pt-4 pb-6">
+                    <View className="px-6 pt-4 pb-4">
                         {/* Top Bar */}
-                        <View className="flex-row justify-between items-center mb-8">
+                        <View className="flex-row justify-between items-center">
                             <View>
                                 <Text className="text-gray-500 text-sm">Welcome back,</Text>
                                 <Text className="text-black text-2xl font-bold mt-1">{userName}</Text>
@@ -154,9 +253,13 @@ export default function HomeScreen() {
                             <View className="flex-row gap-3">
                                 <TouchableOpacity
                                     onPress={() => router.push('/profile')}
-                                    className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
+                                    className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center overflow-hidden border-2 border-gray-200"
                                 >
-                                    <Ionicons name="person-outline" size={22} color="#000" />
+                                    {profilePic ? (
+                                        <Image source={{ uri: profilePic }} className="w-full h-full" />
+                                    ) : (
+                                        <Ionicons name="person-outline" size={22} color="#000" />
+                                    )}
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={handleLogout}
@@ -164,20 +267,6 @@ export default function HomeScreen() {
                                 >
                                     <Ionicons name="log-out-outline" size={22} color="#000" />
                                 </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Stats Cards */}
-                        <View className="flex-row gap-3">
-                            <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200">
-                                <Ionicons name="footsteps-outline" size={28} color="#000" />
-                                <Text className="text-black text-3xl font-bold mt-3 mb-1">{steps.toLocaleString()}</Text>
-                                <Text className="text-gray-600 text-sm font-medium">Steps Today</Text>
-                            </View>
-                            <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200">
-                                <Ionicons name="flame-outline" size={28} color="#000" />
-                                <Text className="text-black text-3xl font-bold mt-3 mb-1">{calories}</Text>
-                                <Text className="text-gray-600 text-sm font-medium">Calories</Text>
                             </View>
                         </View>
                     </View>
@@ -188,7 +277,45 @@ export default function HomeScreen() {
                         className="flex-1 bg-white"
                         showsVerticalScrollIndicator={false}
                     >
-                        <View className="px-6 pt-2 pb-6">
+                        <View className="px-6 pb-6">
+                            {/* Stats Cards - 2x2 Grid */}
+                            <View className="gap-3 mb-6">
+                                {/* Top Row: Steps | Distance */}
+                                <View className="flex-row gap-3">
+                                    <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center">
+                                        <Ionicons name="footsteps-outline" size={28} color="#000" />
+                                        <Text className="text-black text-3xl font-bold mt-3 mb-1">{steps.toLocaleString()}</Text>
+                                        <Text className="text-gray-600 text-sm font-medium">Steps</Text>
+                                    </View>
+                                    <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center">
+                                        <Ionicons name="navigate-outline" size={28} color="#000" />
+                                        <Text className="text-black text-3xl font-bold mt-3 mb-1">{distance.toFixed(2)}</Text>
+                                        <Text className="text-gray-600 text-sm font-medium">Distance (km)</Text>
+                                    </View>
+                                </View>
+
+                                {/* Bottom Row: Calories | Goal */}
+                                <View className="flex-row gap-3">
+                                    <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center">
+                                        <Ionicons name="flame-outline" size={28} color="#000" />
+                                        <Text className="text-black text-3xl font-bold mt-3 mb-1">{calories}</Text>
+                                        <Text className="text-gray-600 text-sm font-medium">Calories</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
+                                        onPress={handleGoalPress}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View className="flex-row justify-between items-start mb-2 w-full">
+                                            <Ionicons name="trophy-outline" size={28} color="#000" />
+                                            <Ionicons name="create-outline" size={20} color="#666" />
+                                        </View>
+                                        <CircularProgress progress={(distance / dailyGoal) * 100} size={70} />
+                                        <Text className="text-gray-600 text-sm font-medium mt-2">Goal: {dailyGoal} km</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
                             {/* Quick Actions */}
                             <Text className="text-black text-xl font-bold mb-4">Quick Actions</Text>
                             <View className="flex-row flex-wrap gap-3 mb-6">
@@ -196,7 +323,7 @@ export default function HomeScreen() {
                                     <TouchableOpacity
                                         key={index}
                                         onPress={() => handleActionPress(action)}
-                                        className="w-[48%] bg-gray-50 rounded-2xl p-5 border border-gray-200"
+                                        className="w-[48%] bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
                                         activeOpacity={0.7}
                                     >
                                         <Ionicons name={action.icon as any} size={32} color="#000" />
@@ -262,261 +389,60 @@ export default function HomeScreen() {
                         </View>
                     </ScrollView>
                 </View>
+
+                {/* Goal Selection Modal */}
+                <Modal
+                    visible={showGoalModal}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowGoalModal(false)}
+                >
+                    <View className="flex-1 bg-black/50 justify-center items-center px-6">
+                        <View className="bg-white rounded-3xl p-6 w-full max-w-sm">
+                            <View className="items-center mb-6">
+                                <View className="w-16 h-16 bg-orange-100 rounded-full items-center justify-center mb-4">
+                                    <Ionicons name="trophy" size={32} color="#f97316" />
+                                </View>
+                                <Text className="text-black text-2xl font-bold mb-2">Set Daily Goal</Text>
+                                <Text className="text-gray-600 text-sm text-center">
+                                    Enter your daily distance goal in kilometers
+                                </Text>
+                            </View>
+
+                            <View className="mb-6">
+                                <Text className="text-gray-700 font-semibold mb-2">Goal (km)</Text>
+                                <TextInput
+                                    className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-4 text-black text-lg font-semibold"
+                                    value={goalInput}
+                                    onChangeText={setGoalInput}
+                                    keyboardType="decimal-pad"
+                                    placeholder="Enter goal"
+                                    placeholderTextColor="#9ca3af"
+                                />
+                            </View>
+
+                            <View className="flex-row gap-3">
+                                <TouchableOpacity
+                                    className="flex-1 bg-gray-100 rounded-xl py-4 items-center"
+                                    onPress={() => setShowGoalModal(false)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="flex-1 bg-black rounded-xl py-4 items-center"
+                                    onPress={handleGoalSubmit}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text className="text-white font-semibold text-base">Save Goal</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         </SafeAreaProvider>
     );
 }
 
-const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#667eea',
-    },
-    container: {
-        flex: 1,
-        backgroundColor: '#667eea',
-    },
-    header: {
-        backgroundColor: '#667eea',
-        paddingBottom: 24,
-        paddingTop: 8,
-    },
-    headerContent: {
-        paddingHorizontal: 20,
-    },
-    topBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    welcomeText: {
-        color: 'rgba(255, 255, 255, 0.8)',
-        fontSize: 14,
-    },
-    userName: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 4,
-    },
-    logoutButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    statCard: {
-        flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: 16,
-        padding: 16,
-        alignItems: 'center',
-    },
-    statNumber: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 8,
-        marginBottom: 4,
-    },
-    statLabel: {
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    mainContent: {
-        flex: 1,
-        backgroundColor: '#f8f9fa',
-    },
-    scrollContent: {
-        paddingBottom: 24,
-    },
-    contentContainer: {
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingHorizontal: 20,
-        paddingTop: 24,
-        minHeight: '100%',
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#2d3436',
-        marginBottom: 16,
-        marginTop: 8,
-    },
-    quickActionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 24,
-    },
-    actionCardContainer: {
-        width: '48%',
-        borderRadius: 16,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    actionCardImage: {
-        width: '100%',
-        height: 120,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    actionCardImageStyle: {
-        borderRadius: 16,
-    },
-    actionCardOverlay: {
-        flex: 1,
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    actionCard: {
-        width: '48%',
-        borderRadius: 16,
-        padding: 20,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    actionTitle: {
-        color: '#fff',
-        fontWeight: '600',
-        marginTop: 8,
-        fontSize: 15,
-    },
-    planCard: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 24,
-    },
-    planHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    planHeaderText: {
-        color: '#636e72',
-        marginLeft: 8,
-        fontWeight: '600',
-        fontSize: 15,
-    },
-    planDescription: {
-        color: '#636e72',
-        fontSize: 14,
-        lineHeight: 20,
-        marginBottom: 16,
-    },
-    scheduleButton: {
-        backgroundColor: '#667eea',
-        borderRadius: 12,
-        paddingVertical: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    scheduleButtonText: {
-        color: '#fff',
-        fontWeight: '600',
-        fontSize: 15,
-    },
-    workoutsListContainer: {
-        marginBottom: 24,
-    },
-    workoutItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#e9ecef',
-    },
-    workoutIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    workoutDetails: {
-        flex: 1,
-    },
-    workoutTime: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#667eea',
-        marginBottom: 4,
-    },
-    workoutDesc: {
-        fontSize: 14,
-        color: '#636e72',
-    },
-    notificationIndicator: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0, 184, 148, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    addMoreButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
-        borderWidth: 2,
-        borderColor: '#667eea',
-        borderRadius: 12,
-        borderStyle: 'dashed',
-    },
-    addMoreText: {
-        color: '#667eea',
-        fontWeight: '600',
-        marginLeft: 8,
-        fontSize: 15,
-    },
-    activityCard: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingVertical: 24,
-    },
-    emptyStateText: {
-        color: '#636e72',
-        marginTop: 12,
-        fontSize: 15,
-        fontWeight: '600',
-    },
-    emptyStateSubtext: {
-        color: 'rgba(99, 110, 114, 0.6)',
-        fontSize: 13,
-        textAlign: 'center',
-        marginTop: 4,
-    },
-});
+const styles = StyleSheet.create({});
