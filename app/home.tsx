@@ -205,61 +205,59 @@ export default function HomeScreen() {
                                 ))}
                             </View>
 
+
                             {/* Today's Workouts */}
-                            <Text style={styles.sectionTitle}>Today's Workouts</Text>
+                            <Text className="text-black text-xl font-bold mb-4">Today's Workouts</Text>
                             {todayWorkouts.length === 0 ? (
-                                <View style={styles.planCard}>
-                                    <View style={styles.planHeader}>
-                                        <Ionicons name="calendar-outline" size={20} color="#667eea" />
-                                        <Text style={styles.planHeaderText}>No workouts scheduled</Text>
+                                <View className="bg-gray-50 rounded-2xl p-6 border border-gray-200 mb-6">
+                                    <View className="flex-row items-center mb-3">
+                                        <Ionicons name="calendar-outline" size={20} color="#000" />
+                                        <Text className="text-black font-semibold ml-2 text-base">No workouts scheduled</Text>
                                     </View>
-                                    <Text style={styles.planDescription}>
+                                    <Text className="text-gray-600 text-sm mb-4">
                                         Start your fitness journey by scheduling your first workout!
                                     </Text>
                                     <TouchableOpacity
-                                        style={styles.scheduleButton}
                                         onPress={() => router.push('/workout')}
+                                        className="bg-black rounded-full py-3 px-5 flex-row items-center justify-center"
+                                        activeOpacity={0.8}
                                     >
-                                        <Text style={styles.scheduleButtonText}>Schedule Workout</Text>
-                                        <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+                                        <Text className="text-white font-semibold mr-2">Schedule Workout</Text>
+                                        <Ionicons name="arrow-forward" size={18} color="#fff" />
                                     </TouchableOpacity>
                                 </View>
                             ) : (
-                                <View style={styles.workoutsListContainer}>
+                                <View className="mb-6">
                                     {todayWorkouts.map((workout, index) => (
-                                        <View key={index} style={styles.workoutItem}>
-                                            <View style={styles.workoutIconContainer}>
-                                                <Ionicons name="barbell" size={24} color="#667eea" />
+                                        <View key={index} className="bg-gray-50 rounded-2xl p-4 mb-3 flex-row items-center border border-gray-200">
+                                            <View className="w-12 h-12 rounded-full bg-white items-center justify-center mr-4">
+                                                <Ionicons name="barbell" size={24} color="#000" />
                                             </View>
-                                            <View style={styles.workoutDetails}>
-                                                <Text style={styles.workoutTime}>{formatTime(workout.time)}</Text>
-                                                <Text style={styles.workoutDesc}>{workout.description}</Text>
+                                            <View className="flex-1">
+                                                <Text className="text-black font-semibold text-base">{formatTime(workout.time)}</Text>
+                                                <Text className="text-gray-600 text-sm mt-1">{workout.description}</Text>
                                             </View>
-                                            <View style={styles.notificationIndicator}>
-                                                <Ionicons name="time-outline" size={16} color="#00b894" />
-                                            </View>
+                                            <Ionicons name="time-outline" size={20} color="#666" />
                                         </View>
                                     ))}
                                     <TouchableOpacity
-                                        style={styles.addMoreButton}
                                         onPress={() => router.push('/workout')}
+                                        className="flex-row items-center justify-center py-3"
                                     >
-                                        <Ionicons name="add-circle-outline" size={20} color="#667eea" />
-                                        <Text style={styles.addMoreText}>Add More Workouts</Text>
+                                        <Ionicons name="add-circle-outline" size={20} color="#000" />
+                                        <Text className="text-black font-semibold ml-2">Add More Workouts</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
 
                             {/* Recent Activity */}
-                            <Text style={styles.sectionTitle}>Recent Activity</Text>
-                            <View style={styles.activityCard}>
-                                <View style={styles.emptyState}>
-                                    <Ionicons name="barbell-outline" size={48} color="#ccc" />
-                                    <Text style={styles.emptyStateText}>No recent activity</Text>
-                                    <Text style={styles.emptyStateSubtext}>
-                                        Your workout history will appear here
-                                    </Text>
-                                </View>
+                            <Text className="text-black text-xl font-bold mb-4">Recent Activity</Text>
+                            <View className="bg-gray-50 rounded-2xl p-8 border border-gray-200 items-center">
+                                <Ionicons name="barbell-outline" size={48} color="#ccc" />
+                                <Text className="text-gray-800 font-semibold mt-4 text-base">No recent activity</Text>
+                                <Text className="text-gray-500 text-sm mt-2 text-center">
+                                    Your workout history will appear here
+                                </Text>
                             </View>
                         </View>
                     </ScrollView>
