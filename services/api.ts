@@ -5,7 +5,7 @@ import axios from 'axios';
 // For Android Emulator: http://10.0.2.2:5000
 // For iOS Simulator: http://localhost:5000
 // For Physical Device: http://YOUR_COMPUTER_IP:5000 (find IP with ipconfig/ifconfig)
-const API_URL = 'http://192.168.100.41:5000/api'; // Physical Device - Wi-Fi IP
+const API_URL = 'http://192.168.100.85:5000/api'; // Physical Device - Your computer's IP
 
 // Create axios instance
 const api = axios.create({

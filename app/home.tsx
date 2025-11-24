@@ -302,14 +302,14 @@ export default function HomeScreen() {
                                         <Text className="text-gray-600 text-sm font-medium">Calories</Text>
                                     </View>
                                     <TouchableOpacity
-                                        className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
+                                        className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center relative"
                                         onPress={handleGoalPress}
                                         activeOpacity={0.7}
                                     >
-                                        <View className="flex-row justify-between items-start mb-2 w-full">
-                                            <Ionicons name="trophy-outline" size={28} color="#000" />
+                                        <View className="absolute top-5 right-5">
                                             <Ionicons name="create-outline" size={20} color="#666" />
                                         </View>
+                                        <Ionicons name="trophy-outline" size={28} color="#000" />
                                         <CircularProgress progress={(distance / dailyGoal) * 100} size={70} />
                                         <Text className="text-gray-600 text-sm font-medium mt-2">Goal: {dailyGoal} km</Text>
                                     </TouchableOpacity>
