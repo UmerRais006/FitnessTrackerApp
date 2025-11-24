@@ -39,7 +39,7 @@ const loginValidation = [
 ];
 
 // Public routes
-router.post('/register', registerValidation, register);
+router.post('/register', register);
 router.post('/login', loginValidation, login);
 router.post('/verify-email', verifyEmail);
 

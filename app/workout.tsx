@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
+    ImageBackground,
     Modal,
     Platform,
     ScrollView,
-    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
@@ -153,14 +154,6 @@ export default function WorkoutScreen() {
         });
     };
 
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    };
-
     const onTimeChange = (event: any, selectedDate?: Date) => {
         setShowTimePicker(Platform.OS === 'ios');
         if (selectedDate) {
@@ -170,432 +163,193 @@ export default function WorkoutScreen() {
 
     return (
         <SafeAreaProvider>
-            <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <SafeAreaView className="flex-1 bg-white" edges={['top']}>
                 <StatusBar style="light" />
-                <View style={styles.container}>
-                    {/* Header */}
-                    <View style={styles.header}>
+
+                {/* Header with Background */}
+                <ImageBackground
+                    source={require('../assets/images/workout-bicep.png')}
+                    className="pb-4 pt-2"
+                    resizeMode="cover"
+                >
+                    <LinearGradient
+                        colors={['rgba(255, 140, 0, 0.85)', 'rgba(139, 69, 19, 0.9)']}
+                        className="absolute inset-0"
+                    />
+
+                    <View className="flex-row justify-between items-center px-5">
                         <TouchableOpacity
-                            style={styles.backButton}
+                            className="w-11 h-11 rounded-full bg-black/20 items-center justify-center"
                             onPress={() => router.back()}
                         >
-                            <Ionicons name="arrow-back" size={24} color="#fff" />
+                            <Ionicons name="arrow-back" size={24} color="#000" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Weekly Workout</Text>
-                        <View style={{ width: 40 }} />
+                        <Text className="text-black text-xl font-bold">Weekly Workout</Text>
+                        <View className="w-11" />
+                    </View>
+                </ImageBackground>
+
+                <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
+                    {/* Week Calendar */}
+                    <View className="mb-6">
+                        <Text className="text-black text-lg font-bold mb-4">Select a Day</Text>
+                        <View className="flex-row flex-wrap gap-2">
+                            {daysOfWeek.map((day) => (
+                                <TouchableOpacity
+                                    key={day.full}
+                                    className={`w-[30%] rounded-2xl p-4 items-center ${workouts[day.full]?.length > 0
+                                            ? 'bg-orange-500'
+                                            : 'bg-orange-100'
+                                        }`}
+                                    onPress={() => handleDayPress(day.full)}
+                                >
+                                    <Text className={`text-sm font-semibold mb-1 ${workouts[day.full]?.length > 0 ? 'text-white' : 'text-black/70'
+                                        }`}>
+                                        {day.short}
+                                    </Text>
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center ${workouts[day.full]?.length > 0 ? 'bg-white/30' : 'bg-orange-200'
+                                        }`}>
+                                        <Text className={`text-xs font-bold ${workouts[day.full]?.length > 0 ? 'text-white' : 'text-orange-600'
+                                            }`}>
+                                            {workouts[day.full]?.length || 0}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
 
-                    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                        {/* Week Calendar */}
-                        <View style={styles.calendarContainer}>
-                            <Text style={styles.sectionTitle}>Select a Day</Text>
-                            <View style={styles.daysGrid}>
-                                {daysOfWeek.map((day) => (
-                                    <TouchableOpacity
-                                        key={day.full}
-                                        style={[
-                                            styles.dayCard,
-                                            workouts[day.full]?.length > 0 && styles.dayCardActive,
-                                        ]}
-                                        onPress={() => handleDayPress(day.full)}
-                                    >
-                                        <Text style={[
-                                            styles.dayShort,
-                                            workouts[day.full]?.length > 0 && styles.dayShortActive,
-                                        ]}>
-                                            {day.short}
-                                        </Text>
-                                        {workouts[day.full]?.length > 0 && (
-                                            <View style={styles.workoutBadge}>
-                                                <Text style={styles.workoutBadgeText}>
-                                                    {workouts[day.full].length}
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
+                    {/* Scheduled Workouts */}
+                    <View className="mb-6">
+                        <Text className="text-black text-lg font-bold mb-4">Scheduled Workouts</Text>
+                        {Object.keys(workouts).length === 0 ? (
+                            <View className="bg-orange-50 rounded-2xl p-6 items-center">
+                                <Ionicons name="calendar-outline" size={48} color="#ccc" />
+                                <Text className="text-black/60 mt-3 text-base font-semibold">No workouts scheduled</Text>
+                                <Text className="text-black/40 text-sm text-center mt-1">
+                                    Tap a day above to add your first workout
+                                </Text>
                             </View>
-                        </View>
+                        ) : (
+                            <View>
+                                {daysOfWeek.map((day) => {
+                                    const dayWorkouts = workouts[day.full] || [];
+                                    if (dayWorkouts.length === 0) return null;
 
-                        {/* Workouts List */}
-                        <View style={styles.workoutsContainer}>
-                            <Text style={styles.sectionTitle}>This Week's Workouts</Text>
-                            {Object.keys(workouts).length === 0 ? (
-                                <View style={styles.emptyState}>
-                                    <Ionicons name="calendar-outline" size={64} color="#ccc" />
-                                    <Text style={styles.emptyStateText}>No workouts scheduled</Text>
-                                    <Text style={styles.emptyStateSubtext}>
-                                        Tap on a day above to add your first workout
-                                    </Text>
-                                </View>
-                            ) : (
-                                daysOfWeek.map((day) =>
-                                    workouts[day.full]?.length > 0 ? (
-                                        <View key={day.full} style={styles.daySection}>
-                                            <Text style={styles.daySectionTitle}>{day.full}</Text>
-                                            {workouts[day.full].map((workout, index) => (
-                                                <View key={index} style={styles.workoutCard}>
-                                                    <View style={styles.dumbbellIcon}>
-                                                        <Ionicons name="barbell" size={24} color="#667eea" />
+                                    return (
+                                        <View key={day.full} className="mb-4">
+                                            <Text className="text-orange-600 text-sm font-bold mb-2">{day.full}</Text>
+                                            {dayWorkouts.map((workout, index) => (
+                                                <View
+                                                    key={index}
+                                                    className="flex-row items-center bg-orange-50 rounded-xl p-4 mb-2 border border-orange-200"
+                                                >
+                                                    <View className="w-12 h-12 rounded-full bg-orange-100 items-center justify-center mr-3">
+                                                        <Ionicons name="barbell" size={24} color="#FF8C00" />
                                                     </View>
-                                                    <View style={styles.workoutInfo}>
-                                                        <View style={styles.workoutTimeContainer}>
-                                                            <Ionicons name="time-outline" size={18} color="#667eea" />
-                                                            <Text style={styles.workoutTime}>{formatTime(workout.time)}</Text>
-                                                        </View>
-                                                        <Text style={styles.workoutDescription}>
+                                                    <View className="flex-1">
+                                                        <Text className="text-orange-600 text-sm font-semibold mb-1">
+                                                            {formatTime(workout.time)}
+                                                        </Text>
+                                                        <Text className="text-black/70 text-sm">
                                                             {workout.description}
                                                         </Text>
                                                     </View>
                                                     <TouchableOpacity
-                                                        style={styles.deleteButton}
                                                         onPress={() => handleDeleteWorkout(day.full, index)}
+                                                        className="w-9 h-9 rounded-full bg-red-100 items-center justify-center"
                                                     >
-                                                        <Ionicons name="trash-outline" size={20} color="#ff4757" />
+                                                        <Ionicons name="trash-outline" size={18} color="#ff4757" />
                                                     </TouchableOpacity>
                                                 </View>
                                             ))}
                                         </View>
-                                    ) : null
-                                )
-                            )}
-                        </View>
-                    </ScrollView>
+                                    );
+                                })}
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
 
-                    {/* Add Workout Modal */}
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={modalVisible}
-                        onRequestClose={() => setModalVisible(false)}
-                    >
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>Add Workout - {selectedDay}</Text>
-                                    <TouchableOpacity
-                                        onPress={() => setModalVisible(false)}
-                                        style={styles.closeButton}
-                                    >
-                                        <Ionicons name="close" size={24} color="#636e72" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.inputLabel}>Workout Time</Text>
-                                    <TouchableOpacity
-                                        style={styles.timePickerButton}
-                                        onPress={() => setShowTimePicker(true)}
-                                    >
-                                        <Ionicons name="time-outline" size={20} color="#667eea" />
-                                        <View style={styles.timePickerContent}>
-                                            <Text style={styles.timePickerText}>{formatTime(workoutTime)}</Text>
-                                            <Text style={styles.timePickerDate}>{formatDate(workoutTime)}</Text>
-                                        </View>
-                                        <Ionicons name="chevron-down" size={20} color="#667eea" />
-                                    </TouchableOpacity>
-
-                                    {showTimePicker && (
-                                        <DateTimePicker
-                                            value={workoutTime}
-                                            mode="time"
-                                            is24Hour={false}
-                                            display="default"
-                                            onChange={onTimeChange}
-                                        />
-                                    )}
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.inputLabel}>Description</Text>
-                                    <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-                                        <Ionicons name="clipboard-outline" size={20} color="#667eea" style={styles.textAreaIcon} />
-                                        <TextInput
-                                            style={[styles.input, styles.textArea]}
-                                            placeholder="e.g., Chest & Triceps, Cardio, Yoga..."
-                                            placeholderTextColor="#999"
-                                            value={workoutDescription}
-                                            onChangeText={setWorkoutDescription}
-                                            multiline
-                                            numberOfLines={4}
-                                        />
-                                    </View>
-                                </View>
-
+                {/* Add Workout Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View className="flex-1 justify-end bg-black/50">
+                        <View className="bg-white rounded-t-3xl p-6 pb-8">
+                            {/* Modal Header */}
+                            <View className="flex-row justify-between items-center mb-6">
+                                <Text className="text-black text-xl font-bold">Add Workout</Text>
                                 <TouchableOpacity
-                                    style={styles.addButton}
-                                    onPress={handleAddWorkout}
+                                    onPress={() => setModalVisible(false)}
+                                    className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center"
                                 >
-                                    <Text style={styles.addButtonText}>Add Workout</Text>
-                                    <Ionicons name="add-circle" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                                    <Ionicons name="close" size={24} color="#000" />
                                 </TouchableOpacity>
                             </View>
+
+                            {/* Selected Day */}
+                            <View className="bg-orange-50 rounded-xl p-4 mb-4">
+                                <Text className="text-black/60 text-xs font-semibold mb-1">Selected Day</Text>
+                                <Text className="text-orange-600 text-lg font-bold">{selectedDay}</Text>
+                            </View>
+
+                            {/* Time Picker */}
+                            <View className="mb-4">
+                                <Text className="text-black/70 text-sm font-semibold mb-2">Workout Time</Text>
+                                <TouchableOpacity
+                                    onPress={() => setShowTimePicker(true)}
+                                    className="bg-orange-50 rounded-xl p-4 flex-row items-center justify-between border border-orange-200"
+                                >
+                                    <View className="flex-row items-center">
+                                        <Ionicons name="time-outline" size={20} color="#FF8C00" />
+                                        <Text className="text-black ml-3 text-base font-medium">
+                                            {formatTime(workoutTime)}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#FF8C00" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {showTimePicker && (
+                                <DateTimePicker
+                                    value={workoutTime}
+                                    mode="time"
+                                    is24Hour={false}
+                                    display="default"
+                                    onChange={onTimeChange}
+                                />
+                            )}
+
+                            {/* Description Input */}
+                            <View className="mb-6">
+                                <Text className="text-black/70 text-sm font-semibold mb-2">Description</Text>
+                                <TextInput
+                                    className="bg-orange-50 rounded-xl p-4 text-base text-black border border-orange-200"
+                                    placeholder="e.g., Upper body workout, Cardio session..."
+                                    placeholderTextColor="rgba(0, 0, 0, 0.4)"
+                                    value={workoutDescription}
+                                    onChangeText={setWorkoutDescription}
+                                    multiline
+                                    numberOfLines={3}
+                                    textAlignVertical="top"
+                                />
+                            </View>
+
+                            {/* Add Button */}
+                            <TouchableOpacity
+                                onPress={handleAddWorkout}
+                                className="bg-black rounded-full py-4 items-center"
+                            >
+                                <Text className="text-white text-base font-bold">Add Workout</Text>
+                            </TouchableOpacity>
                         </View>
-                    </Modal>
-                </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         </SafeAreaProvider>
     );
 }
-
-const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#667eea',
-    },
-    container: {
-        flex: 1,
-        backgroundColor: '#667eea',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        backgroundColor: '#667eea',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    content: {
-        flex: 1,
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-    },
-    calendarContainer: {
-        padding: 20,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#2d3436',
-        marginBottom: 16,
-    },
-    daysGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-    },
-    dayCard: {
-        width: '13%',
-        aspectRatio: 1,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: '#e9ecef',
-        position: 'relative',
-    },
-    dayCardActive: {
-        backgroundColor: '#667eea',
-        borderColor: '#667eea',
-    },
-    dayShort: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#636e72',
-    },
-    dayShortActive: {
-        color: '#fff',
-    },
-    workoutBadge: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
-        backgroundColor: '#00b894',
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    workoutBadgeText: {
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    workoutsContainer: {
-        padding: 20,
-        paddingTop: 0,
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingVertical: 40,
-    },
-    emptyStateText: {
-        color: '#636e72',
-        marginTop: 16,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    emptyStateSubtext: {
-        color: 'rgba(99, 110, 114, 0.6)',
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 8,
-        paddingHorizontal: 40,
-    },
-    daySection: {
-        marginBottom: 24,
-    },
-    daySectionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#2d3436',
-        marginBottom: 12,
-    },
-    workoutCard: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#e9ecef',
-    },
-    dumbbellIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    workoutInfo: {
-        flex: 1,
-    },
-    workoutTimeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 6,
-    },
-    workoutTime: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#667eea',
-        marginLeft: 6,
-    },
-    workoutDescription: {
-        fontSize: 14,
-        color: '#636e72',
-        lineHeight: 20,
-    },
-    deleteButton: {
-        padding: 8,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
-        paddingBottom: 40,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#2d3436',
-    },
-    closeButton: {
-        padding: 4,
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    inputLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2d3436',
-        marginBottom: 8,
-    },
-    timePickerButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderWidth: 2,
-        borderColor: '#e9ecef',
-    },
-    timePickerContent: {
-        flex: 1,
-        marginLeft: 12,
-    },
-    timePickerText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#2d3436',
-    },
-    timePickerDate: {
-        fontSize: 12,
-        color: '#636e72',
-        marginTop: 2,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderWidth: 2,
-        borderColor: '#e9ecef',
-    },
-    textAreaWrapper: {
-        alignItems: 'flex-start',
-        paddingTop: 14,
-    },
-    textAreaIcon: {
-        marginTop: 2,
-    },
-    input: {
-        flex: 1,
-        fontSize: 15,
-        color: '#2d3436',
-        marginLeft: 12,
-    },
-    textArea: {
-        height: 80,
-        textAlignVertical: 'top',
-    },
-    addButton: {
-        backgroundColor: '#667eea',
-        borderRadius: 12,
-        paddingVertical: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 8,
-    },
-    addButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});

@@ -4,8 +4,8 @@ import axios from 'axios';
 // API Base URL
 // For Android Emulator: http://10.0.2.2:5000
 // For iOS Simulator: http://localhost:5000
-// For Physical Device: http://YOUR_COMPUTER_IP:5000
-const API_URL = 'http://192.168.100.85:5000/api';
+// For Physical Device: http://YOUR_COMPUTER_IP:5000 (find IP with ipconfig/ifconfig)
+const API_URL = 'http://192.168.100.41:5000/api'; // Physical Device - Wi-Fi IP
 
 // Create axios instance
 const api = axios.create({
@@ -60,6 +60,7 @@ export const authAPI = {
 
             return response.data;
         } catch (error: any) {
+            console.log(error)
             throw error.response?.data || { message: 'Registration failed' };
         }
     },

@@ -14,60 +14,36 @@ import {
 } from 'react-native';
 import { authAPI } from '../services/api';
 
-export default function SignupScreen() {
+export default function LoginScreen() {
     const router = useRouter();
-    const [formData, setFormData] = useState({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-    });
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [errors, setErrors] = useState<{
-        fullName?: string;
-        email?: string;
-        password?: string;
-        confirmPassword?: string;
-    }>({});
+    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const [isLoading, setIsLoading] = useState(false);
 
-    const validateFullName = (name: string): boolean => name.trim().length >= 3;
-    const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const validatePassword = (password: string): boolean => password.length >= 8;
-
-    const handleInputChange = (field: string, value: string) => {
-        setFormData({ ...formData, [field]: value });
-        if (errors[field as keyof typeof errors]) {
-            setErrors({ ...errors, [field]: undefined });
-        }
+    const validateEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
-    const handleSignup = async () => {
-        const newErrors: typeof errors = {};
+    const validatePassword = (password: string): boolean => {
+        return password.length >= 6;
+    };
 
-        if (!formData.fullName.trim()) {
-            newErrors.fullName = 'Full name is required';
-        } else if (!validateFullName(formData.fullName)) {
-            newErrors.fullName = 'Name must be at least 3 characters';
-        }
+    const handleLogin = async () => {
+        const newErrors: { email?: string; password?: string } = {};
 
-        if (!formData.email.trim()) {
+        if (!email.trim()) {
             newErrors.email = 'Email is required';
-        } else if (!validateEmail(formData.email)) {
+        } else if (!validateEmail(email)) {
             newErrors.email = 'Please enter a valid email address';
         }
 
-        if (!formData.password) {
+        if (!password) {
             newErrors.password = 'Password is required';
-        } else if (!validatePassword(formData.password)) {
-            newErrors.password = 'Password must be at least 8 characters';
-        }
-
-        if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+        } else if (!validatePassword(password)) {
+            newErrors.password = 'Password must be at least 6 characters';
         }
 
         setErrors(newErrors);
@@ -75,16 +51,21 @@ export default function SignupScreen() {
         if (Object.keys(newErrors).length === 0) {
             setIsLoading(true);
             try {
-                const response = await authAPI.register(formData.fullName, formData.email, formData.password);
+                console.log('Attempting login with:', email);
+                const response = await authAPI.login(email, password);
+                console.log('Login response:', response);
 
                 if (response.success) {
                     router.replace('/home');
                 }
             } catch (error: any) {
-                console.log(error);
+                console.error('Login error details:', error);
+                console.error('Error message:', error.message);
+                console.error('Error response:', error.response);
+
                 Alert.alert(
-                    'Registration Failed',
-                    error.message || 'Could not create account. Please try again.',
+                    'Login Failed',
+                    error.message || 'Invalid email or password. Please try again.',
                     [{ text: 'OK' }]
                 );
             } finally {
@@ -100,7 +81,7 @@ export default function SignupScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 className="flex-1"
             >
-                <View className="flex-1 justify-center px-8 pt-16 pb-12">
+                <View className="flex-1 justify-center px-8 pb-12">
                     {/* Back Button */}
                     <TouchableOpacity
                         onPress={() => router.back()}
@@ -110,37 +91,50 @@ export default function SignupScreen() {
                     </TouchableOpacity>
 
                     {/* Header */}
-                    <View className="mb-10">
-                        <Text className="text-black text-4xl font-bold mb-2">Create Account</Text>
-                        <Text className="text-gray-600 text-lg">To get started!</Text>
+                    <View className="mb-12">
+                        <Text className="text-black text-4xl font-bold mb-2">Welcome,</Text>
+                        <Text className="text-gray-600 text-lg">Let's become fit!</Text>
                     </View>
 
                     {/* Form Container */}
                     <View className="w-full">
                         {/* Email Input */}
-                        <View className="mb-4">
+                        <View className="mb-5">
                             <TextInput
                                 className="bg-transparent border border-black/40 rounded-xl px-5 py-4 text-base text-black"
                                 placeholder="Email"
                                 placeholderTextColor="rgba(0, 0, 0, 0.5)"
-                                value={formData.email}
-                                onChangeText={(text) => handleInputChange('email', text)}
+                                value={email}
+                                onChangeText={(text) => {
+                                    setEmail(text);
+                                    if (errors.email) {
+                                        setErrors({ ...errors, email: undefined });
+                                    }
+                                }}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 autoComplete="email"
                                 editable={!isLoading}
                             />
+                            {errors.email && (
+                                <Text className="text-red-600 text-xs mt-1.5 ml-1">{errors.email}</Text>
+                            )}
                         </View>
 
                         {/* Password Input */}
-                        <View className="mb-4">
+                        <View className="mb-5">
                             <View className="flex-row items-center">
                                 <TextInput
                                     className="flex-1 bg-transparent border border-black/40 rounded-xl px-5 py-4 text-base text-black"
                                     placeholder="Password"
                                     placeholderTextColor="rgba(0, 0, 0, 0.5)"
-                                    value={formData.password}
-                                    onChangeText={(text) => handleInputChange('password', text)}
+                                    value={password}
+                                    onChangeText={(text) => {
+                                        setPassword(text);
+                                        if (errors.password) {
+                                            setErrors({ ...errors, password: undefined });
+                                        }
+                                    }}
                                     secureTextEntry={!showPassword}
                                     autoCapitalize="none"
                                     editable={!isLoading}
@@ -157,40 +151,16 @@ export default function SignupScreen() {
                                     />
                                 </TouchableOpacity>
                             </View>
+                            {errors.password && (
+                                <Text className="text-red-600 text-xs mt-1.5 ml-1">{errors.password}</Text>
+                            )}
                         </View>
 
-                        {/* Confirm Password Input */}
-                        <View className="mb-4">
-                            <View className="flex-row items-center">
-                                <TextInput
-                                    className="flex-1 bg-transparent border border-black/40 rounded-xl px-5 py-4 text-base text-black"
-                                    placeholder="Confirm Password"
-                                    placeholderTextColor="rgba(0, 0, 0, 0.5)"
-                                    value={formData.confirmPassword}
-                                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                                    secureTextEntry={!showConfirmPassword}
-                                    autoCapitalize="none"
-                                    editable={!isLoading}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-4 p-1"
-                                    disabled={isLoading}
-                                >
-                                    <Ionicons
-                                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                                        size={20}
-                                        color="rgba(0, 0, 0, 0.6)"
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Sign Up Button */}
+                        {/* Login Button */}
                         <TouchableOpacity
-                            onPress={handleSignup}
+                            onPress={handleLogin}
                             disabled={isLoading}
-                            className="bg-black rounded-full py-5 items-center justify-center mb-6 mt-3"
+                            className="bg-black rounded-full py-5 items-center justify-center mb-6 mt-2"
                             activeOpacity={0.8}
                         >
                             {isLoading ? (
@@ -200,11 +170,11 @@ export default function SignupScreen() {
                             )}
                         </TouchableOpacity>
 
-                        {/* Sign In Link */}
-                        <View className="flex-row justify-center items-center mt-2 mb-20">
+                        {/* Sign Up Link */}
+                        <View className="flex-row justify-center items-center mt-2">
                             <Text className="text-black/70 text-sm">Don't have account? </Text>
                             <TouchableOpacity
-                                onPress={() => router.back()}
+                                onPress={() => router.push('/signup')}
                                 disabled={isLoading}
                             >
                                 <Text className="text-black text-sm font-bold">Sign Up Now</Text>

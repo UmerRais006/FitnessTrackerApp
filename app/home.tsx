@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { Pedometer } from 'expo-sensors';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
-    ImageBackground,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,15 +24,54 @@ export default function HomeScreen() {
     const router = useRouter();
     const [userName, setUserName] = useState('User');
     const [todayWorkouts, setTodayWorkouts] = useState<Workout[]>([]);
+    const [steps, setSteps] = useState(0);
+    const [calories, setCalories] = useState(0);
 
     useEffect(() => {
         loadUserData();
         loadTodayWorkouts();
 
+        // Setup pedometer
+        const setupStepCounter = async () => {
+            const isAvailable = await Pedometer.isAvailableAsync();
+            if (isAvailable) {
+                const { status } = await Pedometer.requestPermissionsAsync();
+                if (status === 'granted') {
+                    // Fetch steps immediately
+                    fetchSteps();
+                    // Then fetch every 5 seconds
+                    const stepInterval = setInterval(fetchSteps, 5000);
+                    return stepInterval;
+                }
+            }
+        };
+
+        const stepIntervalPromise = setupStepCounter();
+
         // Refresh workouts when screen comes into focus
-        const interval = setInterval(loadTodayWorkouts, 2000);
-        return () => clearInterval(interval);
+        const workoutInterval = setInterval(loadTodayWorkouts, 2000);
+
+        return () => {
+            clearInterval(workoutInterval);
+            stepIntervalPromise.then(interval => interval && clearInterval(interval));
+        };
     }, []);
+
+    const fetchSteps = async () => {
+        try {
+            const end = new Date();
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+
+            const result = await Pedometer.getStepCountAsync(start, end);
+            if (result) {
+                setSteps(result.steps);
+                setCalories(Math.round(result.steps * 0.04));
+            }
+        } catch (error) {
+            console.log('Error fetching steps:', error);
+        }
+    };
 
     const loadUserData = async () => {
         try {
@@ -98,84 +137,71 @@ export default function HomeScreen() {
         });
     };
 
+
     return (
         <SafeAreaProvider>
-            <SafeAreaView style={styles.safeArea} edges={['top']}>
-                <StatusBar style="light" />
-                <View style={styles.container}>
+            <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+                <StatusBar style="dark" />
+                <View className="flex-1 bg-white">
                     {/* Header */}
-                    <View style={styles.header}>
-                        <View style={styles.headerContent}>
-                            {/* Top Bar */}
-                            <View style={styles.topBar}>
-                                <View>
-                                    <Text style={styles.welcomeText}>Welcome back,</Text>
-                                    <Text style={styles.userName}>{userName}</Text>
-                                </View>
+                    <View className="px-6 pt-4 pb-6">
+                        {/* Top Bar */}
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View>
+                                <Text className="text-gray-500 text-sm">Welcome back,</Text>
+                                <Text className="text-black text-2xl font-bold mt-1">{userName}</Text>
+                            </View>
+                            <View className="flex-row gap-3">
                                 <TouchableOpacity
-                                    style={styles.logoutButton}
-                                    onPress={handleLogout}
+                                    onPress={() => router.push('/profile')}
+                                    className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
                                 >
-                                    <Ionicons name="log-out-outline" size={22} color="#fff" />
+                                    <Ionicons name="person-outline" size={22} color="#000" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={handleLogout}
+                                    className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
+                                >
+                                    <Ionicons name="log-out-outline" size={22} color="#000" />
                                 </TouchableOpacity>
                             </View>
+                        </View>
 
-                            {/* Stats Cards */}
-                            <View style={styles.statsContainer}>
-                                <View style={styles.statCard}>
-                                    <Ionicons name="flame-outline" size={24} color="#fff" />
-                                    <Text style={styles.statNumber}>0</Text>
-                                    <Text style={styles.statLabel}>Calories</Text>
-                                </View>
-                                <View style={styles.statCard}>
-                                    <Ionicons name="fitness-outline" size={24} color="#fff" />
-                                    <Text style={styles.statNumber}>{todayWorkouts.length}</Text>
-                                    <Text style={styles.statLabel}>Today</Text>
-                                </View>
+                        {/* Stats Cards */}
+                        <View className="flex-row gap-3">
+                            <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                                <Ionicons name="footsteps-outline" size={28} color="#000" />
+                                <Text className="text-black text-3xl font-bold mt-3 mb-1">{steps.toLocaleString()}</Text>
+                                <Text className="text-gray-600 text-sm font-medium">Steps Today</Text>
+                            </View>
+                            <View className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                                <Ionicons name="flame-outline" size={28} color="#000" />
+                                <Text className="text-black text-3xl font-bold mt-3 mb-1">{calories}</Text>
+                                <Text className="text-gray-600 text-sm font-medium">Calories</Text>
                             </View>
                         </View>
                     </View>
 
+
                     {/* Main Content */}
                     <ScrollView
-                        style={styles.mainContent}
+                        className="flex-1 bg-white"
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
                     >
-                        <View style={styles.contentContainer}>
+                        <View className="px-6 pt-2 pb-6">
                             {/* Quick Actions */}
-                            <Text style={styles.sectionTitle}>Quick Actions</Text>
-                            <View style={styles.quickActionsGrid}>
+                            <Text className="text-black text-xl font-bold mb-4">Quick Actions</Text>
+                            <View className="flex-row flex-wrap gap-3 mb-6">
                                 {quickActions.map((action, index) => (
-                                    action.image ? (
-                                        <TouchableOpacity
-                                            key={index}
-                                            style={styles.actionCardContainer}
-                                            activeOpacity={0.8}
-                                            onPress={() => handleActionPress(action)}
-                                        >
-                                            <ImageBackground
-                                                source={action.image}
-                                                style={styles.actionCardImage}
-                                                imageStyle={styles.actionCardImageStyle}
-                                            >
-                                                <View style={[styles.actionCardOverlay, { backgroundColor: `${action.color}dd` }]}>
-                                                    <Ionicons name={action.icon as any} size={32} color="#fff" />
-                                                    <Text style={styles.actionTitle}>{action.title}</Text>
-                                                </View>
-                                            </ImageBackground>
-                                        </TouchableOpacity>
-                                    ) : (
-                                        <TouchableOpacity
-                                            key={index}
-                                            style={[styles.actionCard, { backgroundColor: action.color }]}
-                                            activeOpacity={0.8}
-                                            onPress={() => handleActionPress(action)}
-                                        >
-                                            <Ionicons name={action.icon as any} size={32} color="#fff" />
-                                            <Text style={styles.actionTitle}>{action.title}</Text>
-                                        </TouchableOpacity>
-                                    )
+                                    <TouchableOpacity
+                                        key={index}
+                                        onPress={() => handleActionPress(action)}
+                                        className="w-[48%] bg-gray-50 rounded-2xl p-5 border border-gray-200"
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name={action.icon as any} size={32} color="#000" />
+                                        <Text className="text-black font-semibold mt-3 text-base">{action.title}</Text>
+                                    </TouchableOpacity>
                                 ))}
                             </View>
 
