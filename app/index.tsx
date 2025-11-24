@@ -57,7 +57,6 @@ export default function LoginScreen() {
                 const response = await authAPI.login(email, password);
 
                 if (response.success) {
-                    // Navigate to home page
                     router.replace('/home');
                 }
             } catch (error: any) {
