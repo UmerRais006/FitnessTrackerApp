@@ -95,6 +95,7 @@ export default function HomeScreen() {
             const userJson = await AsyncStorage.getItem('user');
             if (userJson) {
                 const user = JSON.parse(userJson);
+                // console.log(user)
                 setUserName(user.fullName || 'User');
                 setProfilePic(user.profilePic || null);
             }
@@ -177,6 +178,26 @@ export default function HomeScreen() {
         }
     };
 
+    const handleDeleteCompletedWorkout = async (index: number) => {
+        try {
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            // Remove the workout at the specified index
+            const updatedWorkouts = completedWorkouts.filter((_, i) => i !== index);
+            setCompletedWorkouts(updatedWorkouts);
+
+            // Save back to storage
+            await AsyncStorage.setItem(`completed_workouts_${userEmail}`, JSON.stringify(updatedWorkouts));
+        } catch (error) {
+            console.error('Error deleting completed workout:', error);
+            Alert.alert('Error', 'Failed to delete workout');
+        }
+    };
+
     const loadCompletedWorkouts = async () => {
         try {
             const userJson = await AsyncStorage.getItem('user');
@@ -202,9 +223,9 @@ export default function HomeScreen() {
     };
 
     const quickActions = [
-        { icon: 'barbell-outline', title: 'Workout', color: '#667eea', route: '/workout', image: require('../assets/images/workout-bicep.png') },
-        { icon: 'nutrition-outline', title: 'Nutrition', color: '#00b894', route: '/nutrition', image: require('../assets/images/nutrition-food.png') },
-        { icon: 'timer-outline', title: 'Timer', color: '#fd79a8', route: '/timer', image: null },
+        { icon: 'barbell-outline', title: 'Workout', color: '#667eea', route: '/workout' },
+        { icon: 'nutrition-outline', title: 'Nutrition', color: '#00b894', route: '/nutrition' },
+        { icon: 'timer-outline', title: 'Timer', color: '#fd79a8', route: '/timer' },
     ];
 
     const handleActionPress = (action: any) => {
@@ -460,11 +481,12 @@ export default function HomeScreen() {
                                                         {workout.day} • {formatTime(workout.completedTime)}
                                                     </Text>
                                                 </View>
-                                                <View className="items-end">
-                                                    <View className="bg-green-100 rounded-full px-3 py-1">
-                                                        <Text className="text-green-600 font-semibold text-xs">Done</Text>
-                                                    </View>
-                                                </View>
+                                                <TouchableOpacity
+                                                    onPress={() => handleDeleteCompletedWorkout(index)}
+                                                    className="w-9 h-9 rounded-full bg-red-100 items-center justify-center"
+                                                >
+                                                    <Ionicons name="trash-outline" size={18} color="#ff4757" />
+                                                </TouchableOpacity>
                                             </View>
                                         </View>
                                     ))}

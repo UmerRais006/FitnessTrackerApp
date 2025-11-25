@@ -17,7 +17,7 @@ export default function WelcomeScreen() {
         <View style={styles.container}>
             <StatusBar style="light" />
             <ImageBackground
-                source={require('../assets/images/welcome-bg.png')}
+                source={require('../assets/images/image.png')}
                 style={styles.background}
                 resizeMode="cover"
             >

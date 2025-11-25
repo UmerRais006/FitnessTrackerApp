@@ -80,10 +80,13 @@ export default function ProfileScreen() {
             });
 
             if (!result.canceled && result.assets[0]) {
-                setProfile({ ...profile, profilePic: result.assets[0].uri });
+                // Store the mobile file path directly
+                const imageUri = result.assets[0].uri;
+                setProfile({ ...profile, profilePic: imageUri });
                 setIsEditing(true);
             }
         } catch (error) {
+            console.error('Error picking image:', error);
             Alert.alert('Error', 'Failed to pick image');
         }
     };
