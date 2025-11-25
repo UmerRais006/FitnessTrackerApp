@@ -1,8 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     ImageBackground,
     Text,
     TouchableOpacity,
@@ -11,6 +13,38 @@ import {
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const [isChecking, setIsChecking] = useState(true);
+
+    useEffect(() => {
+        checkAuth();
+    }, []);
+
+    const checkAuth = async () => {
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const user = await AsyncStorage.getItem('user');
+
+            if (token && user) {
+                // User is authenticated, redirect to home
+                router.replace('/home');
+            } else {
+                // No auth, show welcome screen
+                setIsChecking(false);
+            }
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            setIsChecking(false);
+        }
+    };
+
+    // Show loading indicator while checking auth
+    if (isChecking) {
+        return (
+            <View className="flex-1 bg-white items-center justify-center">
+                <ActivityIndicator size="large" color="#000" />
+            </View>
+        );
+    }
 
     return (
         <View className="flex-1">
