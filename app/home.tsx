@@ -36,6 +36,7 @@ export default function HomeScreen() {
     const [showGoalModal, setShowGoalModal] = useState(false);
     const [goalInput, setGoalInput] = useState('');
     const [completedWorkouts, setCompletedWorkouts] = useState<any[]>([]);
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
     useEffect(() => {
         loadUserData();
@@ -318,7 +319,7 @@ export default function HomeScreen() {
                                     )}
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={handleLogout}
+                                    onPress={() => setShowLogoutDialog(true)}
                                     className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
                                 >
                                     <Ionicons name="log-out-outline" size={22} color="#000" />
@@ -541,6 +542,48 @@ export default function HomeScreen() {
                                     activeOpacity={0.8}
                                 >
                                     <Text className="text-white font-semibold text-base">Save Goal</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Logout Confirmation Dialog */}
+                <Modal
+                    visible={showLogoutDialog}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowLogoutDialog(false)}
+                >
+                    <View className="flex-1 bg-black/50 justify-center items-center px-6">
+                        <View className="bg-white rounded-3xl p-6 w-full max-w-sm">
+                            <View className="items-center mb-6">
+                                <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
+                                    <Ionicons name="log-out" size={32} color="#ff4757" />
+                                </View>
+                                <Text className="text-black text-2xl font-bold mb-2">Logout</Text>
+                                <Text className="text-gray-600 text-sm text-center">
+                                    Are you sure you want to logout from your account?
+                                </Text>
+                            </View>
+
+                            <View className="flex-row gap-3">
+                                <TouchableOpacity
+                                    className="flex-1 bg-gray-100 rounded-xl py-4 items-center"
+                                    onPress={() => setShowLogoutDialog(false)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="flex-1 bg-red-500 rounded-xl py-4 items-center"
+                                    onPress={() => {
+                                        setShowLogoutDialog(false);
+                                        handleLogout();
+                                    }}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text className="text-white font-semibold text-base">Logout</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
