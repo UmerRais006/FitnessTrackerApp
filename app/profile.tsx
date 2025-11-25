@@ -14,6 +14,7 @@ import {
     View
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { authAPI } from '../services/api';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -51,20 +52,14 @@ export default function ProfileScreen() {
         }
 
         try {
-            const userJson = await AsyncStorage.getItem('user');
-            if (userJson) {
-                const user = JSON.parse(userJson);
-                const updatedUser = {
-                    ...user,
-                    fullName: profile.fullName,
-                    profilePic: profile.profilePic,
-                };
-                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            const response = await authAPI.updateProfile(profile.fullName, profile.profilePic);
+
+            if (response.success) {
                 setIsEditing(false);
                 Alert.alert('Success', 'Profile updated successfully!');
             }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to update profile');
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to update profile');
         }
     };
 

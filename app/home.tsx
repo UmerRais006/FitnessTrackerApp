@@ -177,7 +177,7 @@ export default function HomeScreen() {
         { icon: 'barbell-outline', title: 'Workout', color: '#667eea', route: '/workout', image: require('../assets/images/workout-bicep.png') },
         { icon: 'nutrition-outline', title: 'Nutrition', color: '#00b894', route: '/nutrition', image: require('../assets/images/nutrition-food.png') },
         { icon: 'stats-chart-outline', title: 'Progress', color: '#a29bfe', route: null, image: null },
-        { icon: 'calendar-outline', title: 'Schedule', color: '#fd79a8', route: null, image: null },
+        { icon: 'timer-outline', title: 'Timer', color: '#fd79a8', route: '/timer', image: null },
     ];
 
     const handleActionPress = (action: any) => {

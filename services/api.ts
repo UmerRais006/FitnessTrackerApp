@@ -96,6 +96,25 @@ export const authAPI = {
             await AsyncStorage.removeItem('user');
         }
     },
+
+    // Update Profile
+    updateProfile: async (fullName: string, profilePic: string | null) => {
+        try {
+            const response = await api.put('/auth/profile', {
+                fullName,
+                profilePic,
+            });
+
+            if (response.data.success && response.data.user) {
+                await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+            }
+
+            return response.data;
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || 'Failed to update profile';
+            throw new Error(errorMessage);
+        }
+    },
 };
 
 export default api;

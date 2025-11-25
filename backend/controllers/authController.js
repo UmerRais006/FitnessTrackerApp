@@ -59,6 +59,7 @@ exports.register = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         isVerified: user.isVerified,
+        profilePic: user.profilePic,
         createdAt: user.createdAt
       }
     });
@@ -106,6 +107,7 @@ exports.login = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         isVerified: user.isVerified,
+        profilePic: user.profilePic,
         profile: user.profile,
         lastLogin: user.lastLogin
       }
@@ -185,11 +187,12 @@ exports.verifyEmail = async (req, res) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
-    const { fullName, profile } = req.body;
+    const { fullName, profile, profilePic } = req.body;
 
     const updateData = {};
     if (fullName) updateData.fullName = fullName;
     if (profile) updateData.profile = profile;
+    if (profilePic !== undefined) updateData.profilePic = profilePic;
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -204,6 +207,7 @@ exports.updateProfile = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profilePic: user.profilePic,
         profile: user.profile
       }
     });
