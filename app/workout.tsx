@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
-    ImageBackground,
+    KeyboardAvoidingView,
     Modal,
     Platform,
     ScrollView,
@@ -36,6 +35,7 @@ export default function WorkoutScreen() {
     const [workoutDescription, setWorkoutDescription] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [workouts, setWorkouts] = useState<WeekWorkouts>({});
+    const [editingWorkout, setEditingWorkout] = useState<{ day: string; index: number } | null>(null);
 
     useEffect(() => {
         loadWorkouts();
@@ -43,7 +43,15 @@ export default function WorkoutScreen() {
 
     const loadWorkouts = async () => {
         try {
-            const workoutsJson = await AsyncStorage.getItem('workouts');
+            // Get current user
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            // Load user-specific workouts
+            const workoutsJson = await AsyncStorage.getItem(`workouts_${userEmail}`);
             if (workoutsJson) {
                 const savedWorkouts = JSON.parse(workoutsJson);
                 const convertedWorkouts: WeekWorkouts = {};
@@ -62,7 +70,15 @@ export default function WorkoutScreen() {
 
     const saveWorkouts = async (newWorkouts: WeekWorkouts) => {
         try {
-            await AsyncStorage.setItem('workouts', JSON.stringify(newWorkouts));
+            // Get current user
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            // Save user-specific workouts
+            await AsyncStorage.setItem(`workouts_${userEmail}`, JSON.stringify(newWorkouts));
         } catch (error) {
             console.error('Error saving workouts:', error);
         }
@@ -82,6 +98,16 @@ export default function WorkoutScreen() {
         setSelectedDay(day);
         setWorkoutTime(new Date());
         setWorkoutDescription('');
+        setEditingWorkout(null);
+        setModalVisible(true);
+    };
+
+    const handleEditWorkout = (day: string, index: number) => {
+        const workout = workouts[day][index];
+        setSelectedDay(day);
+        setWorkoutTime(workout.time);
+        setWorkoutDescription(workout.description);
+        setEditingWorkout({ day, index });
         setModalVisible(true);
     };
 
@@ -98,28 +124,41 @@ export default function WorkoutScreen() {
         }
 
         if (selectedDay) {
-            const newWorkout: Workout = {
-                time: workoutTime,
-                description: workoutDescription,
-                notificationScheduled: false,
-            };
+            if (editingWorkout) {
+                const updatedWorkouts = { ...workouts };
+                updatedWorkouts[editingWorkout.day][editingWorkout.index] = {
+                    time: workoutTime,
+                    description: workoutDescription,
+                    notificationScheduled: false,
+                };
+                setWorkouts(updatedWorkouts);
+                await saveWorkouts(updatedWorkouts);
+                Alert.alert('Success!', 'Workout updated successfully!');
+            } else {
+                const newWorkout: Workout = {
+                    time: workoutTime,
+                    description: workoutDescription,
+                    notificationScheduled: false,
+                };
 
-            const updatedWorkouts = {
-                ...workouts,
-                [selectedDay]: [...(workouts[selectedDay] || []), newWorkout],
-            };
+                const updatedWorkouts = {
+                    ...workouts,
+                    [selectedDay]: [...(workouts[selectedDay] || []), newWorkout],
+                };
 
-            setWorkouts(updatedWorkouts);
-            await saveWorkouts(updatedWorkouts);
+                setWorkouts(updatedWorkouts);
+                await saveWorkouts(updatedWorkouts);
+
+                const timeUntil = Math.floor((workoutTime.getTime() - now.getTime()) / 1000 / 60);
+                Alert.alert(
+                    'Success!',
+                    `Workout added successfully! Scheduled for ${timeUntil} minute${timeUntil !== 1 ? 's' : ''} from now.`
+                );
+            }
 
             setWorkoutDescription('');
+            setEditingWorkout(null);
             setModalVisible(false);
-
-            const timeUntil = Math.floor((workoutTime.getTime() - now.getTime()) / 1000 / 60);
-            Alert.alert(
-                'Success!',
-                `Workout added successfully! Scheduled for ${timeUntil} minute${timeUntil !== 1 ? 's' : ''} from now.`
-            );
         }
     };
 
@@ -164,22 +203,13 @@ export default function WorkoutScreen() {
     return (
         <SafeAreaProvider>
             <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
 
-                {/* Header with Background */}
-                <ImageBackground
-                    source={require('../assets/images/workout-bicep.png')}
-                    className="pb-4 pt-2"
-                    resizeMode="cover"
-                >
-                    <LinearGradient
-                        colors={['rgba(255, 140, 0, 0.85)', 'rgba(139, 69, 19, 0.9)']}
-                        className="absolute inset-0"
-                    />
-
-                    <View className="flex-row justify-between items-center px-5">
+                {/* Header */}
+                <View className="px-6 pt-4 pb-4 border-b border-gray-200">
+                    <View className="flex-row justify-between items-center">
                         <TouchableOpacity
-                            className="w-11 h-11 rounded-full bg-black/20 items-center justify-center"
+                            className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center"
                             onPress={() => router.back()}
                         >
                             <Ionicons name="arrow-back" size={24} color="#000" />
@@ -187,35 +217,61 @@ export default function WorkoutScreen() {
                         <Text className="text-black text-xl font-bold">Weekly Workout</Text>
                         <View className="w-11" />
                     </View>
-                </ImageBackground>
+                </View>
 
-                <ScrollView className="flex-1 px-5 pt-6" showsVerticalScrollIndicator={false}>
-                    {/* Week Calendar */}
+                <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
+                    {/* Current Date Display */}
+                    <View className="mb-2">
+                        <Text className="text-gray-600 text-sm font-medium">
+                            {new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                        </Text>
+                    </View>
+
+                    {/* Week Calendar - Single Row */}
                     <View className="mb-6">
                         <Text className="text-black text-lg font-bold mb-4">Select a Day</Text>
-                        <View className="flex-row flex-wrap gap-2">
-                            {daysOfWeek.map((day) => (
-                                <TouchableOpacity
-                                    key={day.full}
-                                    className={`w-[30%] rounded-2xl p-4 items-center ${workouts[day.full]?.length > 0
-                                            ? 'bg-orange-500'
-                                            : 'bg-orange-100'
-                                        }`}
-                                    onPress={() => handleDayPress(day.full)}
-                                >
-                                    <Text className={`text-sm font-semibold mb-1 ${workouts[day.full]?.length > 0 ? 'text-white' : 'text-black/70'
-                                        }`}>
-                                        {day.short}
-                                    </Text>
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center ${workouts[day.full]?.length > 0 ? 'bg-white/30' : 'bg-orange-200'
-                                        }`}>
-                                        <Text className={`text-xs font-bold ${workouts[day.full]?.length > 0 ? 'text-white' : 'text-orange-600'
-                                            }`}>
-                                            {workouts[day.full]?.length || 0}
+                        <View className="flex-row justify-between">
+                            {daysOfWeek.map((day) => {
+                                const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                                const isToday = day.full === today;
+                                const hasWorkouts = workouts[day.full]?.length > 0;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={day.full}
+                                        className={`rounded-xl px-2 py-3 items-center flex-1 mx-0.5 ${isToday
+                                            ? 'bg-black'
+                                            : hasWorkouts
+                                                ? 'bg-gray-800'
+                                                : 'bg-white border-2 border-gray-300'
+                                            }`}
+                                        onPress={() => handleDayPress(day.full)}
+                                    >
+                                        <Text
+                                            className={`text-xs font-bold mb-1 ${isToday || hasWorkouts ? 'text-white' : 'text-black'
+                                                }`}
+                                        >
+                                            {day.short}
                                         </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
+                                        <View
+                                            className={`w-5 h-5 rounded-full items-center justify-center ${isToday || hasWorkouts ? 'bg-white/20' : 'bg-gray-200'
+                                                }`}
+                                        >
+                                            <Text
+                                                className={`text-xs font-bold ${isToday || hasWorkouts ? 'text-white' : 'text-black'
+                                                    }`}
+                                            >
+                                                {workouts[day.full]?.length || 0}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
 
@@ -223,7 +279,7 @@ export default function WorkoutScreen() {
                     <View className="mb-6">
                         <Text className="text-black text-lg font-bold mb-4">Scheduled Workouts</Text>
                         {Object.keys(workouts).length === 0 ? (
-                            <View className="bg-orange-50 rounded-2xl p-6 items-center">
+                            <View className="bg-gray-50 rounded-2xl p-6 items-center">
                                 <Ionicons name="calendar-outline" size={48} color="#ccc" />
                                 <Text className="text-black/60 mt-3 text-base font-semibold">No workouts scheduled</Text>
                                 <Text className="text-black/40 text-sm text-center mt-1">
@@ -238,23 +294,29 @@ export default function WorkoutScreen() {
 
                                     return (
                                         <View key={day.full} className="mb-4">
-                                            <Text className="text-orange-600 text-sm font-bold mb-2">{day.full}</Text>
+                                            <Text className="text-black text-sm font-bold mb-2">{day.full}</Text>
                                             {dayWorkouts.map((workout, index) => (
                                                 <View
                                                     key={index}
-                                                    className="flex-row items-center bg-orange-50 rounded-xl p-4 mb-2 border border-orange-200"
+                                                    className="flex-row items-center bg-gray-50 rounded-xl p-4 mb-2 border border-gray-200"
                                                 >
-                                                    <View className="w-12 h-12 rounded-full bg-orange-100 items-center justify-center mr-3">
-                                                        <Ionicons name="barbell" size={24} color="#FF8C00" />
+                                                    <View className="w-12 h-12 rounded-full bg-black items-center justify-center mr-3">
+                                                        <Ionicons name="barbell" size={24} color="#fff" />
                                                     </View>
                                                     <View className="flex-1">
-                                                        <Text className="text-orange-600 text-sm font-semibold mb-1">
+                                                        <Text className="text-black text-sm font-semibold mb-1">
                                                             {formatTime(workout.time)}
                                                         </Text>
-                                                        <Text className="text-black/70 text-sm">
+                                                        <Text className="text-gray-600 text-sm">
                                                             {workout.description}
                                                         </Text>
                                                     </View>
+                                                    <TouchableOpacity
+                                                        onPress={() => handleEditWorkout(day.full, index)}
+                                                        className="w-9 h-9 rounded-full bg-blue-100 items-center justify-center mr-2"
+                                                    >
+                                                        <Ionicons name="create-outline" size={18} color="#3b82f6" />
+                                                    </TouchableOpacity>
                                                     <TouchableOpacity
                                                         onPress={() => handleDeleteWorkout(day.full, index)}
                                                         className="w-9 h-9 rounded-full bg-red-100 items-center justify-center"
@@ -271,83 +333,95 @@ export default function WorkoutScreen() {
                     </View>
                 </ScrollView>
 
-                {/* Add Workout Modal */}
+                {/* Add/Edit Workout Modal */}
                 <Modal
                     animationType="slide"
                     transparent={true}
                     visible={modalVisible}
                     onRequestClose={() => setModalVisible(false)}
                 >
-                    <View className="flex-1 justify-end bg-black/50">
-                        <View className="bg-white rounded-t-3xl p-6 pb-8">
-                            {/* Modal Header */}
-                            <View className="flex-row justify-between items-center mb-6">
-                                <Text className="text-black text-xl font-bold">Add Workout</Text>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        className="flex-1"
+                    >
+                        <View className="flex-1 justify-end bg-black/50">
+                            <View className="bg-white rounded-t-3xl p-6 pb-8">
+                                {/* Modal Header */}
+                                <View className="flex-row justify-between items-center mb-6">
+                                    <Text className="text-black text-xl font-bold">
+                                        {editingWorkout ? 'Edit Workout' : 'Add Workout'}
+                                    </Text>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setModalVisible(false);
+                                            setEditingWorkout(null);
+                                        }}
+                                        className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center"
+                                    >
+                                        <Ionicons name="close" size={24} color="#000" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Selected Day */}
+                                <View className="bg-gray-50 rounded-xl p-4 mb-4">
+                                    <Text className="text-black/60 text-xs font-semibold mb-1">Selected Day</Text>
+                                    <Text className="text-black text-lg font-bold">{selectedDay}</Text>
+                                </View>
+
+                                {/* Time Picker */}
+                                <View className="mb-4">
+                                    <Text className="text-black/70 text-sm font-semibold mb-2">Workout Time</Text>
+                                    <TouchableOpacity
+                                        onPress={() => setShowTimePicker(true)}
+                                        className="bg-gray-50 rounded-xl p-4 flex-row items-center justify-between border border-gray-200"
+                                    >
+                                        <View className="flex-row items-center">
+                                            <Ionicons name="time-outline" size={20} color="#000" />
+                                            <Text className="text-black ml-3 text-base font-medium">
+                                                {formatTime(workoutTime)}
+                                            </Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={20} color="#000" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                {showTimePicker && (
+                                    <DateTimePicker
+                                        value={workoutTime}
+                                        mode="time"
+                                        is24Hour={false}
+                                        display="default"
+                                        onChange={onTimeChange}
+                                    />
+                                )}
+
+                                {/* Description Input */}
+                                <View className="mb-6">
+                                    <Text className="text-black/70 text-sm font-semibold mb-2">Description</Text>
+                                    <TextInput
+                                        className="bg-gray-50 rounded-xl p-4 text-base text-black border border-gray-200"
+                                        placeholder="e.g., Upper body workout, Cardio session..."
+                                        placeholderTextColor="rgba(0, 0, 0, 0.4)"
+                                        value={workoutDescription}
+                                        onChangeText={setWorkoutDescription}
+                                        multiline
+                                        numberOfLines={3}
+                                        textAlignVertical="top"
+                                    />
+                                </View>
+
+                                {/* Add/Update Button */}
                                 <TouchableOpacity
-                                    onPress={() => setModalVisible(false)}
-                                    className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center"
+                                    onPress={handleAddWorkout}
+                                    className="bg-black rounded-full py-4 items-center"
                                 >
-                                    <Ionicons name="close" size={24} color="#000" />
+                                    <Text className="text-white text-base font-bold">
+                                        {editingWorkout ? 'Update Workout' : 'Add Workout'}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
-
-                            {/* Selected Day */}
-                            <View className="bg-orange-50 rounded-xl p-4 mb-4">
-                                <Text className="text-black/60 text-xs font-semibold mb-1">Selected Day</Text>
-                                <Text className="text-orange-600 text-lg font-bold">{selectedDay}</Text>
-                            </View>
-
-                            {/* Time Picker */}
-                            <View className="mb-4">
-                                <Text className="text-black/70 text-sm font-semibold mb-2">Workout Time</Text>
-                                <TouchableOpacity
-                                    onPress={() => setShowTimePicker(true)}
-                                    className="bg-orange-50 rounded-xl p-4 flex-row items-center justify-between border border-orange-200"
-                                >
-                                    <View className="flex-row items-center">
-                                        <Ionicons name="time-outline" size={20} color="#FF8C00" />
-                                        <Text className="text-black ml-3 text-base font-medium">
-                                            {formatTime(workoutTime)}
-                                        </Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={20} color="#FF8C00" />
-                                </TouchableOpacity>
-                            </View>
-
-                            {showTimePicker && (
-                                <DateTimePicker
-                                    value={workoutTime}
-                                    mode="time"
-                                    is24Hour={false}
-                                    display="default"
-                                    onChange={onTimeChange}
-                                />
-                            )}
-
-                            {/* Description Input */}
-                            <View className="mb-6">
-                                <Text className="text-black/70 text-sm font-semibold mb-2">Description</Text>
-                                <TextInput
-                                    className="bg-orange-50 rounded-xl p-4 text-base text-black border border-orange-200"
-                                    placeholder="e.g., Upper body workout, Cardio session..."
-                                    placeholderTextColor="rgba(0, 0, 0, 0.4)"
-                                    value={workoutDescription}
-                                    onChangeText={setWorkoutDescription}
-                                    multiline
-                                    numberOfLines={3}
-                                    textAlignVertical="top"
-                                />
-                            </View>
-
-                            {/* Add Button */}
-                            <TouchableOpacity
-                                onPress={handleAddWorkout}
-                                className="bg-black rounded-full py-4 items-center"
-                            >
-                                <Text className="text-white text-base font-bold">Add Workout</Text>
-                            </TouchableOpacity>
                         </View>
-                    </View>
+                    </KeyboardAvoidingView>
                 </Modal>
             </SafeAreaView>
         </SafeAreaProvider>

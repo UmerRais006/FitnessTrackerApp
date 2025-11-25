@@ -51,18 +51,12 @@ export default function LoginScreen() {
         if (Object.keys(newErrors).length === 0) {
             setIsLoading(true);
             try {
-                console.log('Attempting login with:', email);
                 const response = await authAPI.login(email, password);
-                console.log('Login response:', response);
 
                 if (response.success) {
                     router.replace('/home');
                 }
             } catch (error: any) {
-                console.error('Login error details:', error);
-                console.error('Error message:', error.message);
-                console.error('Error response:', error.response);
-
                 Alert.alert(
                     'Login Failed',
                     error.message || 'Invalid email or password. Please try again.',

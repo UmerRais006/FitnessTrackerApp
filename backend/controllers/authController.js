@@ -17,8 +17,11 @@ exports.register = async (req, res) => {
   const { fullName, email, password } = req.body;
 
   try {
+    // Convert email to lowercase for consistency
+    const emailLowerCase = email.toLowerCase();
+    
     // Check if user already exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: emailLowerCase });
     if (user) {
       return res.status(400).json({
         success: false,
@@ -29,7 +32,7 @@ exports.register = async (req, res) => {
     // Create new user
     user = await User.create({
       fullName,
-      email,
+      email: emailLowerCase,
       password
     });
 
@@ -213,12 +216,9 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Logout user (client-side token removal)
-// @route   POST /api/auth/logout
-// @access  Private
+
 exports.logout = async (req, res) => {
-  // With JWT, logout is handled client-side by removing the token
-  // This endpoint is optional and can be used for logging purposes
+ 
   res.status(200).json({
     success: true,
     message: 'Logged out successfully'

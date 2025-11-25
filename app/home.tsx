@@ -101,7 +101,15 @@ export default function HomeScreen() {
 
     const loadTodayWorkouts = async () => {
         try {
-            const workoutsJson = await AsyncStorage.getItem('workouts');
+            // Get current user
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            // Load user-specific workouts
+            const workoutsJson = await AsyncStorage.getItem(`workouts_${userEmail}`);
             if (workoutsJson) {
                 const allWorkouts = JSON.parse(workoutsJson);
                 const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });

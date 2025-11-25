@@ -82,7 +82,6 @@ export default function SignupScreen() {
                     router.replace('/home');
                 }
             } catch (error: any) {
-                console.log(error);
                 Alert.alert(
                     'Registration Failed',
                     error.message || 'Could not create account. Please try again.',

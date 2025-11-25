@@ -88,7 +88,6 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-// Method to generate JWT token
 UserSchema.methods.generateAuthToken = function() {
   return jwt.sign(
     { id: this._id, email: this.email },
@@ -97,7 +96,7 @@ UserSchema.methods.generateAuthToken = function() {
   );
 };
 
-// Method to generate verification token
+
 UserSchema.methods.generateVerificationToken = function() {
   const token = Math.random().toString(36).substring(2, 15) + 
                 Math.random().toString(36).substring(2, 15);
@@ -105,21 +104,34 @@ UserSchema.methods.generateVerificationToken = function() {
   return token;
 };
 
-// Static method to find user by credentials
 UserSchema.statics.findByCredentials = async function(email, password) {
-  const user = await this.findOne({ email }).select('+password');
-  
-  if (!user) {
-    throw new Error('Invalid email or password');
+  try {
+    
+    const emailLower = email.toLowerCase();
+    console.log('Finding user with email:', emailLower);
+    
+    const user = await this.findOne({ email: emailLower }).select('+password');
+    
+    if (!user) {
+      console.log('User not found with email:', emailLower);
+      throw new Error('Invalid email or password');
+    }
+    
+    console.log('User found, comparing password...');
+    const isPasswordMatch = await user.comparePassword(password);
+    console.log('Password match result:', isPasswordMatch);
+    
+    if (!isPasswordMatch) {
+      console.log('Password does not match for user:', emailLower);
+      throw new Error('Invalid email or password');
+    }
+    
+    console.log('Login successful for user:', emailLower);
+    return user;
+  } catch (error) {
+    console.error('Error in findByCredentials:', error.message);
+    throw error;
   }
-
-  const isPasswordMatch = await user.comparePassword(password);
-  
-  if (!isPasswordMatch) {
-    throw new Error('Invalid email or password');
-  }
-
-  return user;
 };
 
 module.exports = mongoose.model('User', UserSchema);
