@@ -34,12 +34,14 @@ export default function HomeScreen() {
     const [distance, setDistance] = useState(0);
     const [dailyGoal, setDailyGoal] = useState(5); // Default 5 km
     const [showGoalModal, setShowGoalModal] = useState(false);
-    const [goalInput, setGoalInput] = useState('5');
+    const [goalInput, setGoalInput] = useState('');
+    const [completedWorkouts, setCompletedWorkouts] = useState<any[]>([]);
 
     useEffect(() => {
         loadUserData();
         loadTodayWorkouts();
         loadGoal();
+        loadCompletedWorkouts();
 
         // Setup pedometer
         const setupStepCounter = async () => {
@@ -61,10 +63,12 @@ export default function HomeScreen() {
         // Refresh workouts and user data periodically
         const workoutInterval = setInterval(loadTodayWorkouts, 2000);
         const userDataInterval = setInterval(loadUserData, 2000); // Refresh profile pic every 2 seconds
+        const completedInterval = setInterval(loadCompletedWorkouts, 3000); // Refresh completed workouts
 
         return () => {
             clearInterval(workoutInterval);
             clearInterval(userDataInterval);
+            clearInterval(completedInterval);
             stepIntervalPromise.then(interval => interval && clearInterval(interval));
         };
     }, []);
@@ -173,10 +177,33 @@ export default function HomeScreen() {
         }
     };
 
+    const loadCompletedWorkouts = async () => {
+        try {
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            const completedJson = await AsyncStorage.getItem(`completed_workouts_${userEmail}`);
+            if (completedJson) {
+                const workouts = JSON.parse(completedJson);
+                // Convert date strings back to Date objects
+                const convertedWorkouts = workouts.map((w: any) => ({
+                    ...w,
+                    scheduledTime: new Date(w.scheduledTime),
+                    completedTime: new Date(w.completedTime),
+                }));
+                setCompletedWorkouts(convertedWorkouts);
+            }
+        } catch (error) {
+            console.error('Error loading completed workouts:', error);
+        }
+    };
+
     const quickActions = [
         { icon: 'barbell-outline', title: 'Workout', color: '#667eea', route: '/workout', image: require('../assets/images/workout-bicep.png') },
         { icon: 'nutrition-outline', title: 'Nutrition', color: '#00b894', route: '/nutrition', image: require('../assets/images/nutrition-food.png') },
-        { icon: 'stats-chart-outline', title: 'Progress', color: '#a29bfe', route: null, image: null },
         { icon: 'timer-outline', title: 'Timer', color: '#fd79a8', route: '/timer', image: null },
     ];
 
@@ -326,18 +353,37 @@ export default function HomeScreen() {
 
                             {/* Quick Actions */}
                             <Text className="text-black text-xl font-bold mb-4">Quick Actions</Text>
-                            <View className="flex-row flex-wrap gap-3 mb-6">
-                                {quickActions.map((action, index) => (
+                            <View className="gap-3 mb-6">
+                                {/* Top Row - Workout and Nutrition */}
+                                <View className="flex-row gap-3">
                                     <TouchableOpacity
-                                        key={index}
-                                        onPress={() => handleActionPress(action)}
-                                        className="w-[48%] bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
+                                        onPress={() => handleActionPress(quickActions[0])}
+                                        className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons name={action.icon as any} size={32} color="#000" />
-                                        <Text className="text-black font-semibold mt-3 text-base">{action.title}</Text>
+                                        <Ionicons name={quickActions[0].icon as any} size={32} color="#000" />
+                                        <Text className="text-black font-semibold mt-3 text-base">{quickActions[0].title}</Text>
                                     </TouchableOpacity>
-                                ))}
+
+                                    <TouchableOpacity
+                                        onPress={() => handleActionPress(quickActions[1])}
+                                        className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name={quickActions[1].icon as any} size={32} color="#000" />
+                                        <Text className="text-black font-semibold mt-3 text-base">{quickActions[1].title}</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Bottom Row - Timer (Full Width) */}
+                                <TouchableOpacity
+                                    onPress={() => handleActionPress(quickActions[2])}
+                                    className="bg-gray-50 rounded-2xl p-5 border border-gray-200 items-center"
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name={quickActions[2].icon as any} size={32} color="#000" />
+                                    <Text className="text-black font-semibold mt-3 text-base">{quickActions[2].title}</Text>
+                                </TouchableOpacity>
                             </View>
 
 
@@ -387,13 +433,43 @@ export default function HomeScreen() {
 
                             {/* Recent Activity */}
                             <Text className="text-black text-xl font-bold mb-4">Recent Activity</Text>
-                            <View className="bg-gray-50 rounded-2xl p-8 border border-gray-200 items-center">
-                                <Ionicons name="barbell-outline" size={48} color="#ccc" />
-                                <Text className="text-gray-800 font-semibold mt-4 text-base">No recent activity</Text>
-                                <Text className="text-gray-500 text-sm mt-2 text-center">
-                                    Your workout history will appear here
-                                </Text>
-                            </View>
+                            {completedWorkouts.length === 0 ? (
+                                <View className="bg-gray-50 rounded-2xl p-8 border border-gray-200 items-center">
+                                    <Ionicons name="barbell-outline" size={48} color="#ccc" />
+                                    <Text className="text-gray-800 font-semibold mt-4 text-base">No recent activity</Text>
+                                    <Text className="text-gray-500 text-sm mt-2 text-center">
+                                        Complete workouts to see them here
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View>
+                                    {completedWorkouts.map((workout, index) => (
+                                        <View
+                                            key={index}
+                                            className="bg-gray-50 rounded-2xl p-4 mb-3 border border-gray-200"
+                                        >
+                                            <View className="flex-row items-center">
+                                                <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mr-3">
+                                                    <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className="text-black font-bold text-base">
+                                                        {workout.description}
+                                                    </Text>
+                                                    <Text className="text-gray-600 text-sm mt-1">
+                                                        {workout.day} • {formatTime(workout.completedTime)}
+                                                    </Text>
+                                                </View>
+                                                <View className="items-end">
+                                                    <View className="bg-green-100 rounded-full px-3 py-1">
+                                                        <Text className="text-green-600 font-semibold text-xs">Done</Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
                         </View>
                     </ScrollView>
                 </View>

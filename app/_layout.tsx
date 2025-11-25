@@ -14,6 +14,7 @@ export default function RootLayout() {
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="workout" options={{ headerShown: false }} />
         <Stack.Screen name="nutrition" options={{ headerShown: false }} />
+        <Stack.Screen name="timer" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
     </WorkoutProvider>

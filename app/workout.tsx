@@ -23,6 +23,13 @@ interface Workout {
     notificationScheduled?: boolean;
 }
 
+interface CompletedWorkout {
+    description: string;
+    scheduledTime: Date;
+    completedTime: Date;
+    day: string;
+}
+
 interface WeekWorkouts {
     [key: string]: Workout[];
 }
@@ -159,6 +166,75 @@ export default function WorkoutScreen() {
             setWorkoutDescription('');
             setEditingWorkout(null);
             setModalVisible(false);
+        }
+    };
+
+    const handleCompleteWorkout = async (day: string, index: number) => {
+        const workout = workouts[day][index];
+
+        // Validation 1: Check if workout is for today
+        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        if (day !== today) {
+            Alert.alert(
+                'Cannot Complete',
+                `You can only complete today's workouts. This workout is scheduled for ${day}.`
+            );
+            return;
+        }
+
+        // Validation 2: Check if scheduled time has passed
+        const now = new Date();
+        const scheduledTime = new Date(workout.time);
+
+        if (scheduledTime > now) {
+            const timeUntil = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000 / 60);
+            Alert.alert(
+                'Too Early',
+                `This workout is scheduled for ${formatTime(scheduledTime)}. You can complete it in ${timeUntil} minute${timeUntil !== 1 ? 's' : ''}.`
+            );
+            return;
+        }
+
+        const completedWorkout: CompletedWorkout = {
+            description: workout.description,
+            scheduledTime: workout.time,
+            completedTime: new Date(),
+            day: day,
+        };
+
+        try {
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            // Load existing completed workouts
+            const completedJson = await AsyncStorage.getItem(`completed_workouts_${userEmail}`);
+            const completedWorkouts: CompletedWorkout[] = completedJson ? JSON.parse(completedJson) : [];
+
+            // Add new completed workout
+            completedWorkouts.unshift(completedWorkout); // Add to beginning
+
+            // Keep only last 10 completed workouts
+            const trimmedWorkouts = completedWorkouts.slice(0, 10);
+
+            // Save back to storage
+            await AsyncStorage.setItem(`completed_workouts_${userEmail}`, JSON.stringify(trimmedWorkouts));
+
+            // Remove from scheduled workouts
+            const updatedWorkouts = {
+                ...workouts,
+                [day]: workouts[day].filter((_, i) => i !== index),
+            };
+
+            setWorkouts(updatedWorkouts);
+            await saveWorkouts(updatedWorkouts);
+
+            Alert.alert('Great Job!', 'Workout completed! 💪');
+        } catch (error) {
+            console.error('Error completing workout:', error);
+            Alert.alert('Error', 'Failed to mark workout as complete');
         }
     };
 
@@ -311,6 +387,12 @@ export default function WorkoutScreen() {
                                                             {workout.description}
                                                         </Text>
                                                     </View>
+                                                    <TouchableOpacity
+                                                        onPress={() => handleCompleteWorkout(day.full, index)}
+                                                        className="w-9 h-9 rounded-full bg-green-100 items-center justify-center mr-2"
+                                                    >
+                                                        <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                                                    </TouchableOpacity>
                                                     <TouchableOpacity
                                                         onPress={() => handleEditWorkout(day.full, index)}
                                                         className="w-9 h-9 rounded-full bg-blue-100 items-center justify-center mr-2"

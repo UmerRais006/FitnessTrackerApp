@@ -145,13 +145,25 @@ export default function TimerScreen() {
 
     return (
         <SafeAreaProvider>
-            <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+            <SafeAreaView className="flex-1 bg-white">
                 <StatusBar style="dark" />
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     className="flex-1"
                 >
-          
+                    {/* Header */}
+                    <View className="px-6 pt-4 pb-6 border-b border-gray-200">
+                        <View className="flex-row items-center">
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                className="w-11 h-11 rounded-full bg-gray-100 items-center justify-center mr-4"
+                            >
+                                <Ionicons name="arrow-back" size={22} color="#000" />
+                            </TouchableOpacity>
+
+                            <Text className="text-black text-xl font-bold">Timer</Text>
+                        </View>
+                    </View>
 
                     {/* Mode Toggle */}
                     <View className="px-6 pt-6 pb-4">
@@ -237,15 +249,15 @@ export default function TimerScreen() {
                                             key={preset.value}
                                             onPress={() => setPreset(preset.value)}
                                             className={`px-6 py-3 rounded-full ${countdownDuration === preset.value && !isCountdownRunning
-                                                    ? 'bg-orange-500'
-                                                    : 'bg-gray-100'
+                                                ? 'bg-orange-500'
+                                                : 'bg-gray-100'
                                                 }`}
                                             activeOpacity={0.7}
                                             disabled={isCountdownRunning}
                                         >
                                             <Text className={`font-semibold ${countdownDuration === preset.value && !isCountdownRunning
-                                                    ? 'text-white'
-                                                    : 'text-black'
+                                                ? 'text-white'
+                                                : 'text-black'
                                                 }`}>
                                                 {preset.label}
                                             </Text>
