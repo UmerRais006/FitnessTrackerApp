@@ -33,9 +33,19 @@ export default function SignupScreen() {
     }>({});
     const [isLoading, setIsLoading] = useState(false);
 
+    // Password validation requirements
+    const getPasswordRequirements = (password: string) => ({
+        minLength: password.length >= 6,
+        hasCapital: /[A-Z]/.test(password),
+        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    });
+
     const validateFullName = (name: string): boolean => name.trim().length >= 3;
     const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const validatePassword = (password: string): boolean => password.length >= 8;
+    const validatePassword = (password: string): boolean => {
+        const requirements = getPasswordRequirements(password);
+        return requirements.minLength && requirements.hasCapital && requirements.hasSpecial;
+    };
 
     const handleInputChange = (field: string, value: string) => {
         setFormData({ ...formData, [field]: value });
@@ -62,7 +72,7 @@ export default function SignupScreen() {
         if (!formData.password) {
             newErrors.password = 'Password is required';
         } else if (!validatePassword(formData.password)) {
-            newErrors.password = 'Password must be at least 8 characters';
+            newErrors.password = 'Password does not meet requirements';
         }
 
         if (!formData.confirmPassword) {
@@ -97,15 +107,20 @@ export default function SignupScreen() {
         <View className="flex-1 bg-white">
             <StatusBar style="dark" />
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 className="flex-1"
             >
-                <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                    <View className="flex-1 justify-center px-8 pt-16 pb-12 min-h-screen">
+                <ScrollView
+                    className="flex-1"
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View className="px-8 pt-16 pb-8">
                         {/* Back Button */}
                         <TouchableOpacity
                             onPress={() => router.back()}
-                            className="absolute top-12 left-6 w-10 h-10 rounded-full bg-gray-100 items-center justify-center z-10"
+                            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mb-8"
                         >
                             <Ionicons name="arrow-back" size={24} color="#000" />
                         </TouchableOpacity>
@@ -177,6 +192,47 @@ export default function SignupScreen() {
                                         />
                                     </TouchableOpacity>
                                 </View>
+
+                                {/* Password Requirements */}
+                                {formData.password.length > 0 && (
+                                    <View className="mt-3 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                        <Text className="text-gray-700 text-xs font-semibold mb-2">Password must contain:</Text>
+
+                                        <View className="flex-row items-center mb-1.5">
+                                            <Ionicons
+                                                name={getPasswordRequirements(formData.password).minLength ? "checkmark-circle" : "close-circle"}
+                                                size={16}
+                                                color={getPasswordRequirements(formData.password).minLength ? "#16a34a" : "#dc2626"}
+                                            />
+                                            <Text className={`ml-2 text-xs ${getPasswordRequirements(formData.password).minLength ? "text-green-600" : "text-red-600"}`}>
+                                                At least 6 characters
+                                            </Text>
+                                        </View>
+
+                                        <View className="flex-row items-center mb-1.5">
+                                            <Ionicons
+                                                name={getPasswordRequirements(formData.password).hasCapital ? "checkmark-circle" : "close-circle"}
+                                                size={16}
+                                                color={getPasswordRequirements(formData.password).hasCapital ? "#16a34a" : "#dc2626"}
+                                            />
+                                            <Text className={`ml-2 text-xs ${getPasswordRequirements(formData.password).hasCapital ? "text-green-600" : "text-red-600"}`}>
+                                                One capital letter (A-Z)
+                                            </Text>
+                                        </View>
+
+                                        <View className="flex-row items-center">
+                                            <Ionicons
+                                                name={getPasswordRequirements(formData.password).hasSpecial ? "checkmark-circle" : "close-circle"}
+                                                size={16}
+                                                color={getPasswordRequirements(formData.password).hasSpecial ? "#16a34a" : "#dc2626"}
+                                            />
+                                            <Text className={`ml-2 text-xs ${getPasswordRequirements(formData.password).hasSpecial ? "text-green-600" : "text-red-600"}`}>
+                                                One special character (!@#$%^&*...)
+                                            </Text>
+                                        </View>
+                                    </View>
+                                )}
+
                                 {errors.password && (
                                     <Text className="text-red-600 text-xs mt-1.5 ml-1">{errors.password}</Text>
                                 )}
