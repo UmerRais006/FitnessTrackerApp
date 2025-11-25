@@ -115,6 +115,26 @@ export const authAPI = {
             throw new Error(errorMessage);
         }
     },
+
+    // Check if user is authenticated
+    isAuthenticated: async () => {
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            return !!token; // Returns true if token exists, false otherwise
+        } catch (error) {
+            return false;
+        }
+    },
+
+    // Get stored user data
+    getStoredUser: async () => {
+        try {
+            const userJson = await AsyncStorage.getItem('user');
+            return userJson ? JSON.parse(userJson) : null;
+        } catch (error) {
+            return null;
+        }
+    },
 };
 
 export default api;
