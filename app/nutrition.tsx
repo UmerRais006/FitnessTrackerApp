@@ -132,6 +132,7 @@ export default function NutritionScreen() {
         const feet = parseInt(userProfile.heightFeet);
         const inches = parseInt(userProfile.heightInches);
         const heightCm = feetToCm(feet, inches);
+        //bmr=basal metabolic rate
 
         let bmr = 0;
         if (userProfile.gender === 'male') {

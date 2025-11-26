@@ -80,7 +80,6 @@ export default function ProfileScreen() {
             });
 
             if (!result.canceled && result.assets[0]) {
-                // Store the mobile file path directly
                 const imageUri = result.assets[0].uri;
                 setProfile({ ...profile, profilePic: imageUri });
                 setIsEditing(true);

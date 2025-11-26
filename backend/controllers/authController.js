@@ -1,11 +1,8 @@
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
 
-// @desc    Register new user
-// @route   POST /api/auth/register
-// @access  Public
+
 exports.register = async (req, res) => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -17,10 +14,9 @@ exports.register = async (req, res) => {
   const { fullName, email, password } = req.body;
 
   try {
-    // Convert email to lowercase for consistency
+
     const emailLowerCase = email.toLowerCase();
-    
-    // Check if user already exists
+
     let user = await User.findOne({ email: emailLowerCase });
     if (user) {
       return res.status(400).json({
@@ -29,24 +25,17 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create new user
     user = await User.create({
       fullName,
       email: emailLowerCase,
       password
     });
 
-    // Generate verification token (optional)
     const verificationToken = user.generateVerificationToken();
     await user.save();
 
-    // TODO: Send verification email here
-    // await sendVerificationEmail(user.email, verificationToken);
-
-    // Generate JWT token
     const token = user.generateAuthToken();
 
-    // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
 

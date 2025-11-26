@@ -150,7 +150,7 @@ export default function LoginScreen() {
                             )}
                         </View>
 
-                        {/* Login Button */}
+                        
                         <TouchableOpacity
                             onPress={handleLogin}
                             disabled={isLoading}
@@ -164,7 +164,6 @@ export default function LoginScreen() {
                             )}
                         </TouchableOpacity>
 
-                        {/* Sign Up Link */}
                         <View className="flex-row justify-center items-center mt-2">
                             <Text className="text-black/70 text-sm">Don't have account? </Text>
                             <TouchableOpacity
