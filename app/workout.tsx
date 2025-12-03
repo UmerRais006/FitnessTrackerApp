@@ -124,13 +124,17 @@ export default function WorkoutScreen() {
             return;
         }
 
-        const now = new Date();
-        if (workoutTime <= now) {
-            Alert.alert('Invalid Time', 'Please select a future time for the workout.');
-            return;
-        }
-
         if (selectedDay) {
+            // Create a proper date for the selected day
+            const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+            const now = new Date();
+
+            // If the selected day is today and the time has passed, show warning
+            if (selectedDay === today && workoutTime <= now) {
+                Alert.alert('Invalid Time', 'Please select a future time for today\'s workout.');
+                return;
+            }
+
             if (editingWorkout) {
                 const updatedWorkouts = { ...workouts };
                 updatedWorkouts[editingWorkout.day][editingWorkout.index] = {
@@ -156,11 +160,14 @@ export default function WorkoutScreen() {
                 setWorkouts(updatedWorkouts);
                 await saveWorkouts(updatedWorkouts);
 
-                const timeUntil = Math.floor((workoutTime.getTime() - now.getTime()) / 1000 / 60);
-                Alert.alert(
-                    'Success!',
-                    `Workout added successfully! Scheduled for ${timeUntil} minute${timeUntil !== 1 ? 's' : ''} from now.`
-                );
+                // Calculate time message
+                let timeMessage = `Workout scheduled for ${selectedDay} at ${formatTime(workoutTime)}`;
+                if (selectedDay === today) {
+                    const timeUntil = Math.floor((workoutTime.getTime() - now.getTime()) / 1000 / 60);
+                    timeMessage = `Workout added successfully! Scheduled for ${timeUntil} minute${timeUntil !== 1 ? 's' : ''} from now.`;
+                }
+
+                Alert.alert('Success!', timeMessage);
             }
 
             setWorkoutDescription('');

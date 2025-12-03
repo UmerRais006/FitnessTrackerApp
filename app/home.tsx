@@ -555,11 +555,17 @@ export default function HomeScreen() {
                     animationType="fade"
                     onRequestClose={() => setShowLogoutDialog(false)}
                 >
-                    <View className="flex-1 bg-black/50 justify-center items-center px-6">
-                        <View className="bg-white rounded-3xl p-6 w-full max-w-sm">
+                    <View className="flex-1 justify-center items-center px-6" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}>
+                        <View className="bg-white rounded-3xl p-6 w-full max-w-sm" style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 10 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 20,
+                            elevation: 10
+                        }}>
                             <View className="items-center mb-6">
-                                <View className="w-16 h-16 bg-red-100 rounded-full items-center justify-center mb-4">
-                                    <Ionicons name="log-out" size={32} color="#ff4757" />
+                                <View className="w-16 h-16 bg-black rounded-full items-center justify-center mb-4">
+                                    <Ionicons name="log-out" size={32} color="#fff" />
                                 </View>
                                 <Text className="text-black text-2xl font-bold mb-2">Logout</Text>
                                 <Text className="text-gray-600 text-sm text-center">
@@ -569,14 +575,14 @@ export default function HomeScreen() {
 
                             <View className="flex-row gap-3">
                                 <TouchableOpacity
-                                    className="flex-1 bg-gray-100 rounded-xl py-4 items-center"
+                                    className="flex-1 bg-white border-2 border-black rounded-xl py-4 items-center"
                                     onPress={() => setShowLogoutDialog(false)}
                                     activeOpacity={0.7}
                                 >
-                                    <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
+                                    <Text className="text-black font-semibold text-base">Cancel</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    className="flex-1 bg-red-500 rounded-xl py-4 items-center"
+                                    className="flex-1 bg-black rounded-xl py-4 items-center"
                                     onPress={() => {
                                         setShowLogoutDialog(false);
                                         handleLogout();

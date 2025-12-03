@@ -29,11 +29,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         loadWorkouts();
     }, []);
 
-
-
     const loadWorkouts = async () => {
         try {
-            const workoutsJson = await AsyncStorage.getItem('workouts');
+            // Get current user
+            const userJson = await AsyncStorage.getItem('user');
+            if (!userJson) return;
+
+            const user = JSON.parse(userJson);
+            const userEmail = user.email;
+
+            // Load user-specific workouts
+            const workoutsJson = await AsyncStorage.getItem(`workouts_${userEmail}`);
             if (workoutsJson) {
                 const savedWorkouts = JSON.parse(workoutsJson);
                 const convertedWorkouts: WeekWorkouts = {};
@@ -49,8 +55,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error('Error loading workouts:', error);
         }
     };
-
-
 
     return (
         <WorkoutContext.Provider value={{ workouts, loadWorkouts }}>
